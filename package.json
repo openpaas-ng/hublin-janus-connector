@@ -1,5 +1,5 @@
 {
-  "name": "hublin.janus.connector",
+  "name": "hublin-janus-connector",
   "version": "0.0.1",
   "description": "Hublin Janus connector",
   "main": "index.js",
