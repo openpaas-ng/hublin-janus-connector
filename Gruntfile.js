@@ -13,7 +13,8 @@ module.exports = function(grunt) {
           'tasks/**/*.js',
           'test/**/**/*.js',
           'backend/**/*.js',
-          'frontend/js/**/*.js'
+          'frontend/js/**/*.js',
+          'index.js'
         ]
       }
     },
