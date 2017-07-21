@@ -21,7 +21,7 @@ const myAwesomeModule = new AwesomeModule('hublin.janus.connector', {
 
     deploy: (dependencies, callback)=> {
       const app = require('./backend/webserver/application')();
-      let webserverWrapper = dependencies('webserver-wrapper');
+      const webserverWrapper = dependencies('webserver-wrapper');
       webserverWrapper.injectAngularModules('connectorjanus', ['app.js', 'services/janusRTCAdapter.js'], 'hublin.janus.connector', ['live-conference']);
       webserverWrapper.addApp('connectorjanus', app);
       return callback();

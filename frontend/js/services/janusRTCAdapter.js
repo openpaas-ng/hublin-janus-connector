@@ -2,5 +2,5 @@
 
 angular.module('hublin.janus.connector')
 
-    .factory('', ()=> {
+    .factory('', function() {
     });
