@@ -7,6 +7,8 @@ module.exports = function(config) {
       'frontend/components/chai/chai.js',
       'frontend/components/chai-spies/chai-spies.js',
       'node_modules/chai-shallow-deep-equal/chai-shallow-deep-equal.js',
+      'node_modules/sinon/pkg/sinon.js',
+      'frontend/components/sinon-chai/lib/sinon-chai.js',
       'frontend/components/jquery/dist/jquery.min.js',
       'frontend/components/angular/angular.min.js',
       'frontend/components/angular-ui-router/release/angular-ui-router.min.js',
