@@ -14,6 +14,7 @@ module.exports = function(grunt) {
           'test/**/**/*.js',
           'backend/**/*.js',
           'frontend/js/**/*.js',
+          '!frontend/js/janus.js',
           'index.js'
         ]
       }
