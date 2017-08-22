@@ -9,7 +9,18 @@ angular.module('hublin.janus.connector')
     videoroom: 'janus.plugin.videoroom'
   })
 
-  .factory('janusRTCAdapter', function(session, JANUS_CONSTANTS) {
+  .factory('janusFactory', function() {
+    function get($window) {
+      return window.Janus;
+    }
+
+    return {
+      get: get
+    };
+  })
+
+  .factory('janusRTCAdapter', function(session, janusFactory, JANUS_CONSTANTS) {
+    var Janus = janusFactory.get();
 
     return {
       connect: connect,
