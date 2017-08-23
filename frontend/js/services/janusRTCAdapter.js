@@ -20,14 +20,24 @@ angular.module('hublin.janus.connector')
   })
 
   .factory('janusRTCAdapter', function(session, janusFactory, JANUS_CONSTANTS) {
-    var Janus = janusFactory.get();
+    var Janus;
 
     return {
       connect: connect,
       handleSuccessAttach: handleSuccessAttach
     };
 
+    function lazyJanusInstance() {
+      if (!Janus) {
+        Janus = janusFactory.get();
+      }
+
+      return Janus;
+    }
+
     function connect() {
+      var Janus = lazyJanusInstance();
+
       Janus.init({
         debug: true,
         callback: function() {
