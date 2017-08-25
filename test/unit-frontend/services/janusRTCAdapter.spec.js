@@ -4,17 +4,21 @@ var expect = chai.expect;
 var sinon = sinon;
 
 describe('janusAdapter service', function() {
-  var session, janusRTCAdapter, janusFactory;
+  var currentConferenceState, janusRTCAdapter, janusFactory, session, LOCAL_VIDEO_ID;
 
   beforeEach(function() {
     angular.mock.module('hublin.janus.connector', function($provide) {
       $provide.value('session', session);
+      $provide.value('currentConferenceState', currentConferenceState);
       $provide.value('janusFactory', janusFactory);
+      $provide.value('LOCAL_VIDEO_ID', LOCAL_VIDEO_ID);
     });
+    LOCAL_VIDEO_ID = 'video-thumb0';
     session = {
       getUsername: function() { return 'Woot';}
     };
     janusFactory = {};
+    currentConferenceState = {};
     angular.mock.inject(function(_janusRTCAdapter_) {
       janusRTCAdapter = _janusRTCAdapter_;
     });
@@ -27,10 +31,9 @@ describe('janusAdapter service', function() {
         var Janus = {};
 
         Janus.init = function(object) {
-          expect(object.debug).to.be.true;
-          expect(object.callback).to.be.a('function');
-        };
-
+        expect(object.debug).to.be.true;
+        expect(object.callback).to.be.a('function');
+      };
         return Janus;
       };
 
@@ -73,6 +76,7 @@ describe('janusAdapter service', function() {
         Janus.init = function(object) {
           object.callback();
         };
+
         Janus.debug = function() {};
 
         return Janus;
@@ -80,7 +84,6 @@ describe('janusAdapter service', function() {
 
       janusRTCAdapter.connect();
     });
-
   });
 
   describe('handleSuccessAttach method', function() {
@@ -91,6 +94,25 @@ describe('janusAdapter service', function() {
       janusRTCAdapter.handleSuccessAttach(pluginHandle);
 
       expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 1234, ptype: 'publisher', display: 'Woot' } });
+    });
+  });
+
+  describe('onLocalStream method', function() {
+    it('should call Janus attachMediaStream', function() {
+      var localStream = 'stream';
+      var Janus = {};
+      var spy;
+      janusFactory.get = function() {
+        Janus.attachMediaStream = sinon.spy();
+        return Janus;
+      };
+
+      currentConferenceState.getVideoElementById = function(id) { return id; };
+      spy = sinon.spy(currentConferenceState, 'getVideoElementById');
+      janusRTCAdapter.onLocalStream(localStream);
+
+      expect(spy).to.have.been.calledWith(LOCAL_VIDEO_ID);
+      expect(Janus.attachMediaStream).to.have.been.calledWith(LOCAL_VIDEO_ID, 'stream');
     });
   });
 });
