@@ -19,6 +19,7 @@
   "smarttabs": true,
   "white": false,
   "expr": true,
+  "latedef": false,
   "globals": {
     "angular": false,
     "jQuery": false,
@@ -32,7 +33,7 @@
     "describe": false,
     "inject": false,
     "element": false,
-    "it": false
+    "it": false,
+    "chai": false
   }
 }
-
