@@ -4,14 +4,62 @@ angular.module('hublin.janus.connector')
   .constant('JANUS_CONSTANTS', {
     join: 'join',
     defaultRoom: 1234,
-    publisher: 'publisher'
+    publisher: 'publisher',
+    serverAddress: 'http://localhost:8088/janus',
+    videoroom: 'janus.plugin.videoroom'
   })
 
-  .factory('janusRTCAdapter', function(session, JANUS_CONSTANTS) {
+  .factory('janusFactory', function() {
+    function get($window) {
+      return window.Janus;
+    }
 
     return {
+      get: get
+    };
+  })
+
+  .factory('janusRTCAdapter', function(session, janusFactory, JANUS_CONSTANTS) {
+    var Janus;
+
+    return {
+      connect: connect,
       handleSuccessAttach: handleSuccessAttach
     };
+
+    function lazyJanusInstance() {
+      if (!Janus) {
+        Janus = janusFactory.get();
+      }
+
+      return Janus;
+    }
+
+    function connect() {
+      var Janus = lazyJanusInstance();
+
+      Janus.init({
+        debug: true,
+        callback: function() {
+          var janus = new Janus({
+            server: JANUS_CONSTANTS.serverAddress,
+            success: function() {
+              Janus.debug('Session created!');
+              janus.attach({
+                plugin: JANUS_CONSTANTS.videoroom,
+                success: handleSuccessAttach,
+                error: function(error) {
+                  Janus.debug('Error: ' + error);
+                }
+              });
+            },
+            error: function(error) {
+              Janus.debug('Error while creating the session: ' + error);
+            }
+          });
+        }
+      });
+    }
 
     function handleSuccessAttach(pluginHandle) {
       var username = session.getUsername();
@@ -21,4 +69,5 @@ angular.module('hublin.janus.connector')
 
       pluginHandle.send({ message: register });
     }
+
   });
