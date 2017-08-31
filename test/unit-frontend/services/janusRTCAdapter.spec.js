@@ -4,18 +4,21 @@ var expect = chai.expect;
 var sinon = sinon;
 
 describe('janusAdapter service', function() {
-  var currentConferenceState, janusRTCAdapter, janusFactory, session, LOCAL_VIDEO_ID;
+  var currentConferenceState, janusRTCAdapter, janusFactory, plugin, session, LOCAL_VIDEO_ID;
 
   beforeEach(function() {
     angular.mock.module('hublin.janus.connector', function($provide) {
-      $provide.value('session', session);
       $provide.value('currentConferenceState', currentConferenceState);
       $provide.value('janusFactory', janusFactory);
+      $provide.value('session', session);
       $provide.value('LOCAL_VIDEO_ID', LOCAL_VIDEO_ID);
     });
     LOCAL_VIDEO_ID = 'video-thumb0';
     session = {
       getUsername: function() { return 'Woot';}
+    };
+    plugin = {
+      createOffer: function() {}
     };
     janusFactory = {};
     currentConferenceState = {};
@@ -87,13 +90,14 @@ describe('janusAdapter service', function() {
   });
 
   describe('handleSuccessAttach method', function() {
-    var pluginHandle = { };
+    var pluginHandle = {};
 
     it('should send message', function() {
       pluginHandle.send = sinon.spy();
       janusRTCAdapter.handleSuccessAttach(pluginHandle);
 
-      expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 1234, ptype: 'publisher', display: 'Woot' } });
+      expect(janusRTCAdapter.getPlugin()).to.be.equal(pluginHandle);
+      expect(janusRTCAdapter.getPlugin().send).to.have.been.calledWith({ message: { request: 'join', room: 1234, ptype: 'publisher', display: 'Woot' } });
     });
   });
 
@@ -115,4 +119,58 @@ describe('janusAdapter service', function() {
       expect(Janus.attachMediaStream).to.have.been.calledWith(LOCAL_VIDEO_ID, 'stream');
     });
   });
+
+  describe('publishOwnFeed method', function() {
+    it('should call Offer with Media object ,success & error callbacks', function() {
+
+      plugin.createOffer = function(object) {
+        var msg = { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true };
+        expect(object.media).to.deep.equal(msg);
+        expect(object.success).to.be.a('function');
+        expect(object.error).to.be.a('function');
+      };
+
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.publishOwnFeed();
+    });
+
+    it('should send an object when it gets pulisher SDP', function() {
+      var jsep = 'jsep';
+      var Janus;
+
+      janusFactory.get = function() {
+        Janus = function() {};
+        Janus.debug = function() {};
+        return Janus;
+      };
+      plugin.createOffer = function(object) {
+        object.success(jsep);
+      };
+      plugin.send = sinon.spy();
+      janusRTCAdapter.lazyJanusInstance();
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.publishOwnFeed();
+
+      expect(plugin.send).to.have.been.calledWith({ message: { request: 'configure', audio: true, video: true }, jsep: 'jsep'});
+    });
+
+    it('should throw error when it does not get publisher SDP ', function() {
+      var Janus;
+
+      janusFactory.get = function() {
+        Janus = function() {};
+        Janus.error = sinon.spy();
+        return Janus;
+      };
+      plugin.createOffer = function(object) {
+        object.error();
+      };
+      janusRTCAdapter.lazyJanusInstance();
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.publishOwnFeed();
+
+      expect(Janus.error).to.have.been.called;
+    });
+  });
 });
+
