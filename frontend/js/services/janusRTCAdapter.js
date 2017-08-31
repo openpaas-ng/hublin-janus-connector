@@ -19,12 +19,13 @@ angular.module('hublin.janus.connector')
     };
   })
 
-  .factory('janusRTCAdapter', function(session, janusFactory, JANUS_CONSTANTS) {
+  .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, JANUS_CONSTANTS, LOCAL_VIDEO_ID) {
     var Janus;
 
     return {
       connect: connect,
-      handleSuccessAttach: handleSuccessAttach
+      handleSuccessAttach: handleSuccessAttach,
+      onLocalStream: onLocalStream
     };
 
     function lazyJanusInstance() {
@@ -33,6 +34,28 @@ angular.module('hublin.janus.connector')
       }
 
       return Janus;
+    }
+
+    function handleSuccessAttach(pluginHandle) {
+      var username = session.getUsername();
+
+      //The number of the room is the default room used by Janus.
+      //It is only used temporarily, until we implement dynamic room creation.
+      pluginHandle.send({
+        message: {
+          request: JANUS_CONSTANTS.join,
+          room: JANUS_CONSTANTS.defaultRoom,
+          ptype: JANUS_CONSTANTS.publisher,
+          display: username
+        }
+      });
+    }
+
+    function onLocalStream(localStream) {
+      var Janus = lazyJanusInstance();
+      var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID);
+
+      Janus.attachMediaStream(element, localStream);
     }
 
     function connect() {
@@ -60,14 +83,5 @@ angular.module('hublin.janus.connector')
         }
       });
     }
-
-    function handleSuccessAttach(pluginHandle) {
-      var username = session.getUsername();
-      //The number of the room is the default room used by Janus.
-      //It is only used temporarily, until we implement dynamic room creation.
-      var register = { request: JANUS_CONSTANTS.join, room: JANUS_CONSTANTS.defaultRoom, ptype: JANUS_CONSTANTS.publisher, display: username };
-
-      pluginHandle.send({ message: register });
-    }
-
   });
+
