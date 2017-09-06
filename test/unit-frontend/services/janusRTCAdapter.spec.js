@@ -158,7 +158,7 @@ describe('janusAdapter service', function() {
     });
   });
 
-  describe('The handleOnmessage method', function() {
+  describe('The handleOnMessage method', function() {
     beforeEach(function() {
       janusFactory.get = function() {
         var Janus = {};
@@ -171,42 +171,42 @@ describe('janusAdapter service', function() {
 
     it('should call handleJoined Message if event is joined', function() {
       var msg = { videoroom: 'joined'};
-      var jsep = null;
+      var jsSessionEstablishmentProtocol = null;
 
       janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnmessage(msg, jsep);
+      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
 
       expect(currentConferenceState.pushAttendee).to.be.called;
     });
 
     it('should NOT call handleJoined Message if event is not joined', function() {
       var msg = null;
-      var jsep  = null;
+      var jsSessionEstablishmentProtocol  = null;
 
       janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnmessage(msg, jsep);
+      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
 
       expect(currentConferenceState.pushAttendee).not.to.be.called;
     });
 
-    it('should call handleRemoteJsep when jsep is defined and not null', function() {
+    it('should call handleRemoteJsep when jsSessionEstablishmentProtocol is defined and not null', function() {
       var msg = null;
-      var jsep  = {};
+      var jsSessionEstablishmentProtocol  = {};
 
       plugin.handleRemoteJsep = sinon.spy();
       janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnmessage(msg, jsep);
+      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
 
-      expect(plugin.handleRemoteJsep).to.have.been.calledWith({jsep: jsep});
+      expect(plugin.handleRemoteJsep).to.have.been.calledWith({jsep: jsSessionEstablishmentProtocol});
     });
 
-    it('should  Not call handleRemoteJsep when jsep is undefined or null', function() {
+    it('should  Not call handleRemoteJsep when jsSessionEstablishmentProtocol is undefined or null', function() {
       var msg = null;
-      var jsep  = null;
+      var jsSessionEstablishmentProtocol  = null;
 
       plugin.handleRemoteJsep = sinon.spy();
       janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnmessage(msg, jsep);
+      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
 
       expect(plugin.handleRemoteJsep).not.to.be.called;
     });
@@ -227,7 +227,7 @@ describe('janusAdapter service', function() {
     });
 
     it('should send an object when it gets pulisher SDP', function() {
-      var jsep = 'jsep';
+      var jsep = 'jsSessionEstablishmentProtocol';
       var Janus;
 
       janusFactory.get = function() {
@@ -243,7 +243,7 @@ describe('janusAdapter service', function() {
       janusRTCAdapter.setPlugin(plugin);
       janusRTCAdapter.publishOwnFeed();
 
-      expect(plugin.send).to.have.been.calledWith({ message: { request: 'configure', audio: true, video: true }, jsep: 'jsep'});
+      expect(plugin.send).to.have.been.calledWith({ message: { request: 'configure', audio: true, video: true }, jsep: 'jsSessionEstablishmentProtocol'});
     });
 
     it('should throw error when it does not get publisher SDP ', function() {

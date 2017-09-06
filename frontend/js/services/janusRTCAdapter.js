@@ -7,7 +7,8 @@ angular.module('hublin.janus.connector')
     publisher: 'publisher',
     serverAddress: 'http://localhost:8088/janus',
     videoroom: 'janus.plugin.videoroom',
-    configure: 'configure'
+    configure: 'configure',
+    joined: 'joined'
   })
 
   .factory('janusFactory', function() {
@@ -31,7 +32,7 @@ angular.module('hublin.janus.connector')
       handleError: handleError,
       handleJoinedMessage: handleJoinedMessage,
       handleLocalStream: handleLocalStream,
-      handleOnmessage: handleOnmessage,
+      handleOnMessage: handleOnMessage,
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin
     };
@@ -80,7 +81,7 @@ angular.module('hublin.janus.connector')
         //these boolean variables are default settings, until we implement a dynamic configuration
         //the user receive and send both audio and video
         media: { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true },
-        success: function(jsep) {
+        success: function(jsSessionEstablishmentProtocol) {
           Janus.debug('Got publisher SDP!');
           plugin.send({
             message: {
@@ -88,7 +89,7 @@ angular.module('hublin.janus.connector')
               audio: true,
               video: true
             },
-            jsep: jsep
+            jsep: jsSessionEstablishmentProtocol
           });
         },
         error: function(error) {
@@ -103,27 +104,24 @@ angular.module('hublin.janus.connector')
       currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
 
       publishOwnFeed();
-
     }
 
     function handleError(error) {
       Janus.debug('Error: ' + error);
     }
 
-    function handleOnmessage(msg, jsep) {
+    function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
       Janus.debug(' ::: Got a message (publisher) :::');
       Janus.debug(msg);
-      if (msg !== undefined && msg !== null) {
+      if (msg) {
         var event = msg.videoroom;
-        if (event !== undefined && event !== null) {
-          if (event === 'joined') {
-            handleJoinedMessage(msg);
-          }
+        if (event && event === JANUS_CONSTANTS.joined) {
+          handleJoinedMessage(msg);
         }
       }
 
-      if (jsep !== undefined && jsep !== null) {
-        getPlugin().handleRemoteJsep({ jsep: jsep});
+      if (jsSessionEstablishmentProtocol) {
+        getPlugin().handleRemoteJsep({ jsep: jsSessionEstablishmentProtocol});
       }
     }
 
@@ -141,7 +139,7 @@ angular.module('hublin.janus.connector')
                 plugin: JANUS_CONSTANTS.videoroom,
                 success: handleSuccessAttach,
                 error: handleError,
-                onmessage: handleOnmessage,
+                onmessage: handleOnMessage,
                 onlocalstream: handleLocalStream
               });
             },
