@@ -28,7 +28,10 @@ angular.module('hublin.janus.connector')
       getPlugin: getPlugin,
       handleSuccessAttach: handleSuccessAttach,
       lazyJanusInstance: lazyJanusInstance,
-      onLocalStream: onLocalStream,
+      handleError: handleError,
+      handleJoinedMessage: handleJoinedMessage,
+      handleLocalStream: handleLocalStream,
+      handleOnmessage: handleOnmessage,
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin
     };
@@ -65,9 +68,9 @@ angular.module('hublin.janus.connector')
       });
     }
 
-    function onLocalStream(localStream) {
+    function handleLocalStream(localStream) {
       var Janus = lazyJanusInstance();
-      var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID);
+      var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
 
       Janus.attachMediaStream(element, localStream);
     }
@@ -94,6 +97,36 @@ angular.module('hublin.janus.connector')
       });
     }
 
+    function handleJoinedMessage(msg) {
+      var myid = msg.id;
+      var index = 0;
+      currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
+
+      publishOwnFeed();
+
+    }
+
+    function handleError(error) {
+      Janus.debug('Error: ' + error);
+    }
+
+    function handleOnmessage(msg, jsep) {
+      Janus.debug(' ::: Got a message (publisher) :::');
+      Janus.debug(msg);
+      if (msg !== undefined && msg !== null) {
+        var event = msg.videoroom;
+        if (event !== undefined && event !== null) {
+          if (event === 'joined') {
+            handleJoinedMessage(msg);
+          }
+        }
+      }
+
+      if (jsep !== undefined && jsep !== null) {
+        getPlugin().handleRemoteJsep({ jsep: jsep});
+      }
+    }
+
     function connect() {
       var Janus = lazyJanusInstance();
 
@@ -107,14 +140,12 @@ angular.module('hublin.janus.connector')
               janus.attach({
                 plugin: JANUS_CONSTANTS.videoroom,
                 success: handleSuccessAttach,
-                error: function(error) {
-                  Janus.debug('Error: ' + error);
-                }
+                error: handleError,
+                onmessage: handleOnmessage,
+                onlocalstream: handleLocalStream
               });
             },
-            error: function(error) {
-              Janus.debug('Error while creating the session: ' + error);
-            }
+            error: handleError
           });
         }
       });

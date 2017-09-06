@@ -15,7 +15,8 @@ describe('janusAdapter service', function() {
     });
     LOCAL_VIDEO_ID = 'video-thumb0';
     session = {
-      getUsername: function() { return 'Woot';}
+      getUsername: function() { return 'Woot';},
+      getUserId: function() { return '0000'; }
     };
     plugin = {
       createOffer: function() {}
@@ -101,9 +102,38 @@ describe('janusAdapter service', function() {
     });
   });
 
-  describe('onLocalStream method', function() {
+  describe('The handle error method', function() {
+    it('should call Janu debug', function() {
+      var Janus = {};
+      janusFactory.get = function() {
+        Janus.debug = sinon.spy();
+        return Janus;
+      };
+
+      janusRTCAdapter.lazyJanusInstance();
+      janusRTCAdapter.handleError('error');
+
+      expect(Janus.debug).to.have.been.calledWith('Error: error');
+    });
+  });
+
+  describe('The handleJoinedMessage method', function() {
+    it('should handle message with event type == joined', function() {
+      var msg = { id: 'LoL' };
+
+      plugin.createOffer = sinon.spy();
+      currentConferenceState.pushAttendee = sinon.spy();
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.handleJoinedMessage(msg);
+
+      expect(plugin.createOffer).to.be.called;
+      expect(currentConferenceState.pushAttendee).to.have.been.calledWith(0, 'LoL', '0000', 'Woot');
+    });
+  });
+
+  describe('The handleLocalStream method', function() {
     it('should call Janus attachMediaStream', function() {
-      var localStream = 'stream';
+      var stream = 'stream';
       var Janus = {};
       var spy;
       janusFactory.get = function() {
@@ -111,12 +141,74 @@ describe('janusAdapter service', function() {
         return Janus;
       };
 
-      currentConferenceState.getVideoElementById = function(id) { return id; };
+      currentConferenceState.getVideoElementById = function() {
+        var element = {
+          get: function(value) {
+            return 'YoYo';
+          }
+        };
+        return element;
+      };
+
       spy = sinon.spy(currentConferenceState, 'getVideoElementById');
-      janusRTCAdapter.onLocalStream(localStream);
+      janusRTCAdapter.handleLocalStream(stream);
 
       expect(spy).to.have.been.calledWith(LOCAL_VIDEO_ID);
-      expect(Janus.attachMediaStream).to.have.been.calledWith(LOCAL_VIDEO_ID, 'stream');
+      expect(Janus.attachMediaStream).to.have.been.calledWith('YoYo', 'stream');
+    });
+  });
+
+  describe('The handleOnmessage method', function() {
+    beforeEach(function() {
+      janusFactory.get = function() {
+        var Janus = {};
+        Janus.debug = function() {};
+        return Janus;
+      };
+      currentConferenceState.pushAttendee = sinon.spy();
+      janusRTCAdapter.lazyJanusInstance();
+    });
+
+    it('should call handleJoined Message if event is joined', function() {
+      var msg = { videoroom: 'joined'};
+      var jsep = null;
+
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.handleOnmessage(msg, jsep);
+
+      expect(currentConferenceState.pushAttendee).to.be.called;
+    });
+
+    it('should NOT call handleJoined Message if event is not joined', function() {
+      var msg = null;
+      var jsep  = null;
+
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.handleOnmessage(msg, jsep);
+
+      expect(currentConferenceState.pushAttendee).not.to.be.called;
+    });
+
+    it('should call handleRemoteJsep when jsep is defined and not null', function() {
+      var msg = null;
+      var jsep  = {};
+
+      plugin.handleRemoteJsep = sinon.spy();
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.handleOnmessage(msg, jsep);
+
+      expect(plugin.handleRemoteJsep).to.have.been.calledWith({jsep: jsep});
+    });
+
+    it('should  Not call handleRemoteJsep when jsep is undefined or null', function() {
+      var msg = null;
+      var jsep  = null;
+
+      plugin.handleRemoteJsep = sinon.spy();
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.handleOnmessage(msg, jsep);
+
+      expect(plugin.handleRemoteJsep).not.to.be.called;
     });
   });
 
@@ -172,5 +264,6 @@ describe('janusAdapter service', function() {
       expect(Janus.error).to.have.been.called;
     });
   });
+
 });
 
