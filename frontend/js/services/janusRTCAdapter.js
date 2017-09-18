@@ -28,6 +28,7 @@ angular.module('hublin.janus.connector')
 
   .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
+    var videoEnabled = true;
 
     Janus = lazyJanusInstance();
     Janus.init({ debug: true });
@@ -45,6 +46,7 @@ angular.module('hublin.janus.connector')
       handleOnMessage: handleOnMessage,
       leaveRoom: leaveRoom,
       newRemoteFeed: newRemoteFeed,
+      isVideoEnabled: isVideoEnabled,
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin,
       setSfu: setSfu,
@@ -197,9 +199,14 @@ angular.module('hublin.janus.connector')
             break;
         }
       }
+
       if (jsSessionEstablishmentProtocol) {
         getPlugin().handleRemoteJsep({ jsep: jsSessionEstablishmentProtocol});
       }
+    }
+
+    function isVideoEnabled() {
+      return videoEnabled;
     }
 
     function newRemoteFeed(id, display) {
@@ -288,5 +295,6 @@ angular.module('hublin.janus.connector')
         error: handleError
       });
     }
+
   });
 
