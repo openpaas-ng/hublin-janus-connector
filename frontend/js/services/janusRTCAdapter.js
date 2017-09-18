@@ -51,6 +51,7 @@ angular.module('hublin.janus.connector')
       setPlugin: setPlugin,
       setSfu: setSfu,
       setFeeds: setFeeds
+      setVideoEnabled: setVideoEnabled
     };
 
     function lazyJanusInstance() {
@@ -203,6 +204,10 @@ angular.module('hublin.janus.connector')
       if (jsSessionEstablishmentProtocol) {
         getPlugin().handleRemoteJsep({ jsep: jsSessionEstablishmentProtocol});
       }
+    }
+
+    function setVideoEnabled(enabled) {
+      videoEnabled = enabled;
     }
 
     function isVideoEnabled() {

@@ -327,9 +327,12 @@ describe('janusAdapter service', function() {
 
   describe('video enabling and disabling', function() {
     it('should return true', function() {
-      expect(janusRTCAdapter.isVideoEnabled()).toBe(true);
-      janusRTCAdapter.videoEnabled = false;
-      expect(janusRTCAdapter.isVideoEnabled()).toBe(false);
+      expect(janusRTCAdapter.isVideoEnabled()).to.be.true;
+    });
+
+    it('should return false', function() {
+      janusRTCAdapter.setVideoEnabled(false);
+      expect(janusRTCAdapter.isVideoEnabled()).to.be.false;
     });
   });
 
