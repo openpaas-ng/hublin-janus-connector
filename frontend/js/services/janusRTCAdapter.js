@@ -5,10 +5,14 @@ angular.module('hublin.janus.connector')
     join: 'join',
     defaultRoom: 1234,
     publisher: 'publisher',
+    listener: 'listener',
     serverAddress: 'http://localhost:8088/janus',
     videoroom: 'janus.plugin.videoroom',
     configure: 'configure',
-    joined: 'joined'
+    joined: 'joined',
+    attached: 'attached',
+    event: 'event',
+    start: 'start'
   })
 
   .factory('janusFactory', function() {
@@ -21,8 +25,8 @@ angular.module('hublin.janus.connector')
     };
   })
 
-  .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, JANUS_CONSTANTS) {
-    var Janus, plugin;
+  .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
+    var selectiveForwardingUnit, Janus, plugin, feeds = [];
 
     return {
       connect: connect,
@@ -30,11 +34,15 @@ angular.module('hublin.janus.connector')
       handleSuccessAttach: handleSuccessAttach,
       lazyJanusInstance: lazyJanusInstance,
       handleError: handleError,
+      handleEventMessage: handleEventMessage,
       handleJoinedMessage: handleJoinedMessage,
       handleLocalStream: handleLocalStream,
       handleOnMessage: handleOnMessage,
+      newRemoteFeed: newRemoteFeed,
       publishOwnFeed: publishOwnFeed,
-      setPlugin: setPlugin
+      setPlugin: setPlugin,
+      setSfu: setSfu,
+      setFeeds: setFeeds
     };
 
     function lazyJanusInstance() {
@@ -51,6 +59,14 @@ angular.module('hublin.janus.connector')
 
     function setPlugin(_plugin) {
       plugin = _plugin;
+    }
+
+    //used for tests
+    function setSfu(_selectiveForwardingUnit) {
+      selectiveForwardingUnit = _selectiveForwardingUnit;
+    }
+    function setFeeds(_feeds) {
+      feeds = _feeds;
     }
 
     function handleSuccessAttach(pluginHandle) {
@@ -98,12 +114,28 @@ angular.module('hublin.janus.connector')
       });
     }
 
+    function attachFeeds(msg) {
+      if (msg.publishers) {
+        var publishers = msg.publishers;
+        Janus.debug('Got a list of available publishers/feeds:');
+        Janus.debug(publishers);
+        publishers.forEach(function(publisher) {
+          newRemoteFeed(publisher.id, publisher.display);
+        });
+      }
+    }
+
     function handleJoinedMessage(msg) {
       var myid = msg.id;
       var index = 0;
       currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
 
       publishOwnFeed();
+      attachFeeds(msg);
+    }
+
+    function handleEventMessage(msg) {
+      attachFeeds(msg);
     }
 
     function handleError(error) {
@@ -112,17 +144,92 @@ angular.module('hublin.janus.connector')
 
     function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
       Janus.debug(' ::: Got a message (publisher) :::');
-      Janus.debug(msg);
       if (msg) {
-        var event = msg.videoroom;
-        if (event && event === JANUS_CONSTANTS.joined) {
-          handleJoinedMessage(msg);
+        switch (msg.videoroom) {
+          case JANUS_CONSTANTS.joined:
+            handleJoinedMessage(msg);
+            break;
+          case JANUS_CONSTANTS.event:
+            handleEventMessage(msg);
+            break;
+          default:
+            Janus.debug('Not valid Event');
+            break;
         }
       }
-
       if (jsSessionEstablishmentProtocol) {
         getPlugin().handleRemoteJsep({ jsep: jsSessionEstablishmentProtocol});
       }
+    }
+
+    function newRemoteFeed(id, display) {
+      var remotePlugin = {};
+
+      function handleRemoteSuccessAttach(pluginHandle) {
+        Janus.debug('we are attaching a new feed');
+        remotePlugin = pluginHandle;
+        pluginHandle.send({
+          message: {
+            request: JANUS_CONSTANTS.join,
+            room: JANUS_CONSTANTS.defaultRoom,
+            ptype: JANUS_CONSTANTS.listener,
+            feed: id
+          }
+        });
+      }
+
+      function handleOnRemoteStream(stream) {
+        var element = currentConferenceState.getVideoElementById(REMOTE_VIDEO_IDS[remotePlugin.rfindex - 1]);
+        Janus.attachMediaStream(element.get(0), stream);
+      }
+
+      function handleJsep(jsSessionEstablishmentProtocol) {
+        Janus.debug('Handling SDP as well...');
+        // Answer and attach
+        remotePlugin.createAnswer({
+          media: {video:true, audio:true},
+          jsep: jsSessionEstablishmentProtocol,
+          success: function(jsSessionEstablishmentProtocol) {
+            Janus.debug('Got SDP! JSEP');
+            remotePlugin.send({
+              message: { request: JANUS_CONSTANTS.start, room: JANUS_CONSTANTS.defaultRoom },
+              jsep: jsSessionEstablishmentProtocol
+            });
+          },
+          error: handleError
+        });
+      }
+
+      function handleAttachedMessage(msg) {
+        remotePlugin.rfid = msg.id;
+        remotePlugin.rfdisplay = msg.display;
+        for (var i = 1; i <= REMOTE_VIDEO_IDS.length; i++) {
+          if (!feeds[i]) {
+            feeds[i] = remotePlugin;
+            remotePlugin.rfindex = i;
+            currentConferenceState.pushAttendee(remotePlugin.rfindex, remotePlugin.rfid, null, display);
+            break;
+          }
+        }
+      }
+
+      function handleRemoteOnMessage(msg, jsSessionEstablishmentProtocol) {
+        Janus.debug('we are dealing with on message subsciber');
+        if (jsSessionEstablishmentProtocol) {
+          handleJsep(jsSessionEstablishmentProtocol);
+        }
+        if (msg && msg.videoroom === JANUS_CONSTANTS.attached) {
+          handleAttachedMessage(msg);
+        }
+      }
+
+      selectiveForwardingUnit.attach({
+        plugin: JANUS_CONSTANTS.videoroom,
+        success: handleRemoteSuccessAttach,
+        error: handleError,
+        onremotestream: handleOnRemoteStream,
+        onmessage: handleRemoteOnMessage
+      });
     }
 
     function connect() {
@@ -131,11 +238,11 @@ angular.module('hublin.janus.connector')
       Janus.init({
         debug: true,
         callback: function() {
-          var janus = new Janus({
+          selectiveForwardingUnit = new Janus({
             server: JANUS_CONSTANTS.serverAddress,
             success: function() {
               Janus.debug('Session created!');
-              janus.attach({
+              selectiveForwardingUnit.attach({
                 plugin: JANUS_CONSTANTS.videoroom,
                 success: handleSuccessAttach,
                 error: handleError,
