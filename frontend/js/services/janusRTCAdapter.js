@@ -31,7 +31,18 @@ angular.module('hublin.janus.connector')
     var videoEnabled = true;
 
     Janus = lazyJanusInstance();
-    Janus.init({ debug: true });
+    Janus.init({
+      debug: true,
+      callback: function() {
+        Janus.debug('Janus initialized');
+        Janus.listDevices(function(results) {
+          videoEnabled = results.some(function(devices) {
+          return devices.kind === 'videoinput';
+        });
+        console.log('videoEnabled is: ' + videoEnabled);
+        });
+      }
+    });
 
     return {
       connect: connect,
@@ -50,7 +61,7 @@ angular.module('hublin.janus.connector')
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin,
       setSfu: setSfu,
-      setFeeds: setFeeds
+      setFeeds: setFeeds,
       setVideoEnabled: setVideoEnabled
     };
 
@@ -176,13 +187,17 @@ angular.module('hublin.janus.connector')
       var index = 0;
 
       currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
+
       publishOwnFeed();
+      attachFeeds(msg);
+    }
+
+    function handleEventMessage(msg) {
       attachFeeds(msg);
     }
 
     function handleError(error) {
       Janus.debug('Error: ' + error);
-
     }
 
     function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
@@ -266,7 +281,7 @@ angular.module('hublin.janus.connector')
       }
 
       function handleRemoteOnMessage(msg, jsSessionEstablishmentProtocol) {
-        Janus.debug('dealing with on message subsciber');
+        Janus.debug('Handling remote message', msg);
         if (jsSessionEstablishmentProtocol) {
           handleJsep(jsSessionEstablishmentProtocol);
         }
@@ -285,6 +300,8 @@ angular.module('hublin.janus.connector')
     }
 
     function connect() {
+      var Janus = lazyJanusInstance();
+
       selectiveForwardingUnit = new Janus({
         server: JANUS_CONSTANTS.serverAddress,
         success: function() {
@@ -302,4 +319,3 @@ angular.module('hublin.janus.connector')
     }
 
   });
-
