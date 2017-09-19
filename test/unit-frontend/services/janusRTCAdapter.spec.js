@@ -26,7 +26,8 @@ describe('janusAdapter service', function() {
     janusFactory = {};
     currentConferenceState = {};
     sfu = {
-      attach: sinon.spy()
+      attach: sinon.spy(),
+      detach: sinon.spy()
     };
     angular.mock.inject(function(_janusRTCAdapter_) {
       janusRTCAdapter = _janusRTCAdapter_;
@@ -164,13 +165,14 @@ describe('janusAdapter service', function() {
   });
 
   describe('The handleOnMessage method', function() {
+    var Janus = {};
     beforeEach(function() {
       janusFactory.get = function() {
-        var Janus = {};
-        Janus.debug = function() {};
+        Janus.debug = sinon.spy();
         return Janus;
       };
       currentConferenceState.pushAttendee = sinon.spy();
+      currentConferenceState.removeAttendee = sinon.spy();
       janusRTCAdapter.lazyJanusInstance();
     });
 
@@ -202,7 +204,7 @@ describe('janusAdapter service', function() {
     });
 
     describe('should call handleEvent Message if msg.videoroom is event', function() {
-      it('should call attach in newRemotefeed as many times as msg.publishers length', function() {
+      it('should call attachFeeds as many times as msg.publishers length', function() {
         var msg = { videoroom: 'event', publishers: ['P1', 'P2']};
         var jsSessionEstablishmentProtocol  = null;
 
@@ -211,6 +213,21 @@ describe('janusAdapter service', function() {
         janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
 
         expect(sfu.attach).to.be.calledTwice;
+      });
+
+      it('should call unpublishFeed if event is unpublished', function() {
+        var msg = { videoroom: 'event', unpublished: '0000' };
+        var jsSessionEstablishmentProtocol  = null;
+        sfu.rfid = '0000';
+        sfu.rfindex = 0;
+        var feeds = [sfu];
+
+        janusRTCAdapter.setSfu(sfu);
+        janusRTCAdapter.setFeeds(feeds);
+        janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
+
+        expect(currentConferenceState.removeAttendee).to.be.calledWith(0);
+        expect(sfu.detach).to.be.called;
       });
     });
 
@@ -290,6 +307,23 @@ describe('janusAdapter service', function() {
     });
   });
 
+  describe('The leaveRoom method', function() {
+    it('should send unpublish request', function() {
+      var Janus = {};
+
+      janusFactory.get = function() {
+        Janus.debug = function() {};
+        return Janus;
+      };
+      plugin.send = sinon.spy();
+
+      janusRTCAdapter.lazyJanusInstance();
+      janusRTCAdapter.setPlugin(plugin);
+      janusRTCAdapter.leaveRoom();
+
+      expect(plugin.send).to.be.calledWith({ message: { request: 'unpublish'}});
+    });
+  });
   describe('The newRemoteFeeds method', function() {
     var id, display, Janus;
     beforeEach(function() {

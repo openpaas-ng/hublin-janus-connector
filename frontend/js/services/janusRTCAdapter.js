@@ -12,6 +12,7 @@ angular.module('hublin.janus.connector')
     joined: 'joined',
     attached: 'attached',
     event: 'event',
+    unpublish: 'unpublish',
     start: 'start'
   })
 
@@ -25,7 +26,7 @@ angular.module('hublin.janus.connector')
     };
   })
 
-  .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
+  .factory('janusRTCAdapter', function($rootScope, currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
 
     return {
@@ -38,6 +39,7 @@ angular.module('hublin.janus.connector')
       handleJoinedMessage: handleJoinedMessage,
       handleLocalStream: handleLocalStream,
       handleOnMessage: handleOnMessage,
+      leaveRoom: leaveRoom,
       newRemoteFeed: newRemoteFeed,
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin,
@@ -92,6 +94,16 @@ angular.module('hublin.janus.connector')
       Janus.attachMediaStream(element, localStream);
     }
 
+    function leaveRoom() {
+      Janus.debug('we are leaving a room');
+      plugin.send({
+        message:{
+          request: JANUS_CONSTANTS.unpublish
+        }
+      });
+      Janus.debug('unpublish request is sent');
+    }
+
     function publishOwnFeed() {
       plugin.createOffer({
         //these boolean variables are default settings, until we implement a dynamic configuration
@@ -125,16 +137,36 @@ angular.module('hublin.janus.connector')
       }
     }
 
-    function handleJoinedMessage(msg) {
-      var myid = msg.id;
-      var index = 0;
-      currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
-
-      publishOwnFeed();
-      attachFeeds(msg);
+    function unpublishFeed(msg) {
+      var unpublishedFeed = null;
+      for (var i = 0; i < REMOTE_VIDEO_IDS.length; i++) {
+        if (feeds[i] && feeds[i].rfid === msg.unpublished) {
+          unpublishedFeed = feeds[i];
+          break;
+        }
+      }
+      if (unpublishedFeed) {
+        Janus.debug('Feed ' + unpublishedFeed.rfid + ' (' + unpublishedFeed.rfdisplay + ') has left the room, detaching');
+        currentConferenceState.removeAttendee(unpublishedFeed.rfindex);
+        feeds[unpublishedFeed.rfindex] = null;
+        unpublishedFeed.detach();
+      }
     }
 
     function handleEventMessage(msg) {
+      if (msg.publishers) {
+        attachFeeds(msg);
+      }else if (msg.unpublished) {
+        unpublishFeed(msg);
+      }
+    }
+
+    function handleJoinedMessage(msg) {
+      var myid = msg.id;
+      var index = 0;
+
+      currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
+      publishOwnFeed();
       attachFeeds(msg);
     }
 
