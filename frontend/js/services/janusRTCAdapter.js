@@ -26,12 +26,16 @@ angular.module('hublin.janus.connector')
     };
   })
 
-  .factory('janusRTCAdapter', function($rootScope, currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
+  .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
+
+    Janus = lazyJanusInstance();
+    Janus.init({ debug: true });
 
     return {
       connect: connect,
       getPlugin: getPlugin,
+      getSfu: getSfu,
       handleSuccessAttach: handleSuccessAttach,
       lazyJanusInstance: lazyJanusInstance,
       handleError: handleError,
@@ -67,6 +71,9 @@ angular.module('hublin.janus.connector')
     function setSfu(_selectiveForwardingUnit) {
       selectiveForwardingUnit = _selectiveForwardingUnit;
     }
+    function getSfu() {
+      return selectiveForwardingUnit;
+    }
     function setFeeds(_feeds) {
       feeds = _feeds;
     }
@@ -95,7 +102,7 @@ angular.module('hublin.janus.connector')
     }
 
     function leaveRoom() {
-      Janus.debug('we are leaving a room');
+      Janus.debug('leaving a room');
       plugin.send({
         message:{
           request: JANUS_CONSTANTS.unpublish
@@ -156,7 +163,7 @@ angular.module('hublin.janus.connector')
     function handleEventMessage(msg) {
       if (msg.publishers) {
         attachFeeds(msg);
-      }else if (msg.unpublished) {
+      } else if (msg.unpublished) {
         unpublishFeed(msg);
       }
     }
@@ -172,6 +179,7 @@ angular.module('hublin.janus.connector')
 
     function handleError(error) {
       Janus.debug('Error: ' + error);
+
     }
 
     function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
@@ -246,7 +254,7 @@ angular.module('hublin.janus.connector')
       }
 
       function handleRemoteOnMessage(msg, jsSessionEstablishmentProtocol) {
-        Janus.debug('we are dealing with on message subsciber');
+        Janus.debug('dealing with on message subsciber');
         if (jsSessionEstablishmentProtocol) {
           handleJsep(jsSessionEstablishmentProtocol);
         }
@@ -265,26 +273,19 @@ angular.module('hublin.janus.connector')
     }
 
     function connect() {
-      var Janus = lazyJanusInstance();
-
-      Janus.init({
-        debug: true,
-        callback: function() {
-          selectiveForwardingUnit = new Janus({
-            server: JANUS_CONSTANTS.serverAddress,
-            success: function() {
-              Janus.debug('Session created!');
-              selectiveForwardingUnit.attach({
-                plugin: JANUS_CONSTANTS.videoroom,
-                success: handleSuccessAttach,
-                error: handleError,
-                onmessage: handleOnMessage,
-                onlocalstream: handleLocalStream
-              });
-            },
-            error: handleError
+      selectiveForwardingUnit = new Janus({
+        server: JANUS_CONSTANTS.serverAddress,
+        success: function() {
+          Janus.debug('Session created!');
+          selectiveForwardingUnit.attach({
+            plugin: JANUS_CONSTANTS.videoroom,
+            success: handleSuccessAttach,
+            error: handleError,
+            onmessage: handleOnMessage,
+            onlocalstream: handleLocalStream
           });
-        }
+        },
+        error: handleError
       });
     }
   });
