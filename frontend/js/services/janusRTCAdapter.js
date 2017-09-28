@@ -12,6 +12,7 @@ angular.module('hublin.janus.connector')
     joined: 'joined',
     attached: 'attached',
     event: 'event',
+    unpublish: 'unpublish',
     start: 'start'
   })
 
@@ -28,9 +29,13 @@ angular.module('hublin.janus.connector')
   .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
 
+    Janus = lazyJanusInstance();
+    Janus.init({ debug: true });
+
     return {
       connect: connect,
       getPlugin: getPlugin,
+      getSfu: getSfu,
       handleSuccessAttach: handleSuccessAttach,
       lazyJanusInstance: lazyJanusInstance,
       handleError: handleError,
@@ -38,6 +43,7 @@ angular.module('hublin.janus.connector')
       handleJoinedMessage: handleJoinedMessage,
       handleLocalStream: handleLocalStream,
       handleOnMessage: handleOnMessage,
+      leaveRoom: leaveRoom,
       newRemoteFeed: newRemoteFeed,
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin,
@@ -65,6 +71,9 @@ angular.module('hublin.janus.connector')
     function setSfu(_selectiveForwardingUnit) {
       selectiveForwardingUnit = _selectiveForwardingUnit;
     }
+    function getSfu() {
+      return selectiveForwardingUnit;
+    }
     function setFeeds(_feeds) {
       feeds = _feeds;
     }
@@ -90,6 +99,16 @@ angular.module('hublin.janus.connector')
       var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
 
       Janus.attachMediaStream(element, localStream);
+    }
+
+    function leaveRoom() {
+      Janus.debug('leaving a room');
+      plugin.send({
+        message:{
+          request: JANUS_CONSTANTS.unpublish
+        }
+      });
+      Janus.debug('unpublish request is sent');
     }
 
     function publishOwnFeed() {
@@ -125,21 +144,42 @@ angular.module('hublin.janus.connector')
       }
     }
 
-    function handleJoinedMessage(msg) {
-      var myid = msg.id;
-      var index = 0;
-      currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
-
-      publishOwnFeed();
-      attachFeeds(msg);
+    function unpublishFeed(msg) {
+      var unpublishedFeed = null;
+      for (var i = 0; i < REMOTE_VIDEO_IDS.length; i++) {
+        if (feeds[i] && feeds[i].rfid === msg.unpublished) {
+          unpublishedFeed = feeds[i];
+          break;
+        }
+      }
+      if (unpublishedFeed) {
+        Janus.debug('Feed ' + unpublishedFeed.rfid + ' (' + unpublishedFeed.rfdisplay + ') has left the room, detaching');
+        currentConferenceState.removeAttendee(unpublishedFeed.rfindex);
+        feeds[unpublishedFeed.rfindex] = null;
+        unpublishedFeed.detach();
+      }
     }
 
     function handleEventMessage(msg) {
+      if (msg.publishers) {
+        attachFeeds(msg);
+      } else if (msg.unpublished) {
+        unpublishFeed(msg);
+      }
+    }
+
+    function handleJoinedMessage(msg) {
+      var myid = msg.id;
+      var index = 0;
+
+      currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
+      publishOwnFeed();
       attachFeeds(msg);
     }
 
     function handleError(error) {
       Janus.debug('Error: ' + error);
+
     }
 
     function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
@@ -214,7 +254,7 @@ angular.module('hublin.janus.connector')
       }
 
       function handleRemoteOnMessage(msg, jsSessionEstablishmentProtocol) {
-        Janus.debug('we are dealing with on message subsciber');
+        Janus.debug('dealing with on message subsciber');
         if (jsSessionEstablishmentProtocol) {
           handleJsep(jsSessionEstablishmentProtocol);
         }
@@ -233,26 +273,19 @@ angular.module('hublin.janus.connector')
     }
 
     function connect() {
-      var Janus = lazyJanusInstance();
-
-      Janus.init({
-        debug: true,
-        callback: function() {
-          selectiveForwardingUnit = new Janus({
-            server: JANUS_CONSTANTS.serverAddress,
-            success: function() {
-              Janus.debug('Session created!');
-              selectiveForwardingUnit.attach({
-                plugin: JANUS_CONSTANTS.videoroom,
-                success: handleSuccessAttach,
-                error: handleError,
-                onmessage: handleOnMessage,
-                onlocalstream: handleLocalStream
-              });
-            },
-            error: handleError
+      selectiveForwardingUnit = new Janus({
+        server: JANUS_CONSTANTS.serverAddress,
+        success: function() {
+          Janus.debug('Session created!');
+          selectiveForwardingUnit.attach({
+            plugin: JANUS_CONSTANTS.videoroom,
+            success: handleSuccessAttach,
+            error: handleError,
+            onmessage: handleOnMessage,
+            onlocalstream: handleLocalStream
           });
-        }
+        },
+        error: handleError
       });
     }
   });
