@@ -12,7 +12,6 @@
     "grunt-karma": "0.12.1",
     "grunt-lint-pattern": "0.1.4",
     "grunt-mocha-cli": "2.0.0",
-    "Hubl.in-Scalable-VideoConference": "git+https://ci.linagora.com/linagora/lgs/openpaas/Hubl.in-Scalable-VideoConference.git",
     "jscs": "2.5.0",
     "jshint": "2.8.0",
     "karma": "0.13.19",
@@ -36,7 +35,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://ci.linagora.com/linagora/lgs/openpaas/hublin-janus-connector.git"
+    "url": "https://github.com/linagora/hublin-janus-connector.git"
   },
   "author": "Linagora Folks",
   "license": "AGPLv3",
@@ -45,6 +44,5 @@
     "bower": "1.8.0",
     "express": "4.13.3",
     "i18n": "0.6.0"
-
   }
 }
