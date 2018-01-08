@@ -69,7 +69,7 @@ module.exports = function(grunt) {
   });
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-lint-pattern');
+  grunt.loadNpmTasks('@linagora/grunt-lint-pattern');
   grunt.loadNpmTasks('grunt-jscs');
   grunt.loadNpmTasks('grunt-mocha-cli');
   grunt.loadNpmTasks('grunt-karma');
@@ -77,6 +77,6 @@ module.exports = function(grunt) {
   grunt.registerTask('linters', 'Check code for lint', ['jshint:all', 'jscs:all', 'lint_pattern']);
   grunt.registerTask('test-unit-backend', 'Test backend code', ['mochacli:backend']);
   grunt.registerTask('test-unit-frontend', 'Test frontend code', ['karma:unit']);
-  grunt.registerTask('test', ['linters', 'test-unit-frontend', 'test-unit-backend']);
+  grunt.registerTask('test', ['test-unit-frontend', 'test-unit-backend']);
   grunt.registerTask('default', ['test']);
 };

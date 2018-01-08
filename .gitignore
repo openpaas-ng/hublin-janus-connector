@@ -1,3 +1,5 @@
 node_modules
 frontend/components
 !frontend/components/janus
+package-lock.json
+.vscode/
