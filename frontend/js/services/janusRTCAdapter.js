@@ -18,7 +18,7 @@ angular.module('hublin.janus.connector')
 
   .factory('janusFactory', function() {
     function get($window) {
-      return window.Janus;
+      return $window.Janus;
     }
 
     return {
@@ -113,7 +113,7 @@ angular.module('hublin.janus.connector')
     function leaveRoom() {
       Janus.debug('leaving a room');
       plugin.send({
-        message:{
+        message: {
           request: JANUS_CONSTANTS.unpublish
         }
       });
@@ -245,7 +245,7 @@ angular.module('hublin.janus.connector')
         Janus.debug('Handling SDP as well...');
         // Answer and attach
         remotePlugin.createAnswer({
-          media: {video:true, audio:true},
+          media: {video: true, audio: true},
           jsep: jsSessionEstablishmentProtocol,
           success: function(jsSessionEstablishmentProtocol) {
             Janus.debug('Got SDP! JSEP');
