@@ -39,7 +39,6 @@ angular.module('hublin.janus.connector')
           videoEnabled = results.some(function(devices) {
           return devices.kind === 'videoinput';
         });
-        console.log('videoEnabled is: ' + videoEnabled);
         });
       }
     });
@@ -66,11 +65,7 @@ angular.module('hublin.janus.connector')
     };
 
     function lazyJanusInstance() {
-      if (!Janus) {
-        Janus = janusFactory.get();
-      }
-
-      return Janus;
+      return janusFactory.get();
     }
 
     function getPlugin() {
@@ -189,10 +184,6 @@ angular.module('hublin.janus.connector')
       currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
 
       publishOwnFeed();
-      attachFeeds(msg);
-    }
-
-    function handleEventMessage(msg) {
       attachFeeds(msg);
     }
 
