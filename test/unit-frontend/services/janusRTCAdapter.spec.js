@@ -1,7 +1,8 @@
 'use strict';
 
+/* global chai, sinon: false */
+
 var expect = chai.expect;
-var sinon = sinon;
 
 describe('janusAdapter service', function() {
   var currentConferenceState, janusDebugMock, janusInitMock, janusAttachMediaStreamMock,
@@ -169,7 +170,7 @@ describe('janusAdapter service', function() {
 
       currentConferenceState.getVideoElementById = function() {
         var element = {
-          get: function(value) {
+          get: function() {
             return 'YoYo';
           }
         };
@@ -383,7 +384,7 @@ describe('janusAdapter service', function() {
       };
       currentConferenceState.getVideoElementById = function() {
         var element = {
-          get: function(value) {
+          get: function() {
             return 'YoYo';
           }
         };
