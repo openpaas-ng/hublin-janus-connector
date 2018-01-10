@@ -1,9 +1,7 @@
-'use strict';
-
 const AwesomeModule = require('awesome-module');
 const Dependency = AwesomeModule.AwesomeModuleDependency;
 
-const myAwesomeModule = new AwesomeModule('hublin.janus.connector', {
+const janusConnector = new AwesomeModule('hublin.janus.connector', {
   dependencies: [
     new Dependency(Dependency.TYPE_ABILITY, 'wsserver', 'wsserver'),
     new Dependency(Dependency.TYPE_NAME, 'webserver.wrapper', 'webserver-wrapper'),
@@ -22,17 +20,14 @@ const myAwesomeModule = new AwesomeModule('hublin.janus.connector', {
     deploy: (dependencies, callback) => {
       const app = require('./backend/webserver/application')();
       const webserverWrapper = dependencies('webserver-wrapper');
-      webserverWrapper.injectJS('connectorjanus', ['janus.js'], ['live-conference']);
+
       webserverWrapper.injectAngularModules('connectorjanus', ['app.js', 'services/janusRTCAdapter.js'], 'hublin.janus.connector', ['live-conference']);
+      webserverWrapper.injectJSAsset('connector', ['connectorjanus/js/janus.js'], ['connector']);
       webserverWrapper.addApp('connectorjanus', app);
-      return callback();
+
+      callback();
     }
   }
-
 });
 
-/**
- * The main AwesomeModule describing the application.
- * @type {AwesomeModule}
- */
-module.exports = myAwesomeModule;
+module.exports = janusConnector;
