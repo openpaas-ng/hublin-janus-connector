@@ -7,16 +7,17 @@ const janusConnector = new AwesomeModule(MODULE_NAME, {
   dependencies: [
     new Dependency(Dependency.TYPE_ABILITY, 'wsserver', 'wsserver'),
     new Dependency(Dependency.TYPE_NAME, 'webserver.wrapper', 'webserver-wrapper'),
-    new Dependency(Dependency.TYPE_NAME, 'linagora.io.meetings.core.logger', 'logger')
+    new Dependency(Dependency.TYPE_NAME, 'linagora.io.meetings.core.logger', 'logger'),
+    new Dependency(Dependency.TYPE_NAME, 'linagora.esn.webrtc', 'webrtc')
   ],
   abilities: ['webrtc-adapter'],
   states: {
     lib: (dependencies, callback) => {
-      const lib = {
-        lib: null
-      };
+      const webrtc = dependencies('webrtc');
+      const lib = require('./backend/lib')(dependencies);
 
-      return callback(null, lib);
+      webrtc.registry.register(MODULE_NAME, lib);
+      callback(null, { lib });
     },
 
     deploy: (dependencies, callback) => {
