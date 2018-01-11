@@ -16,8 +16,8 @@ angular.module('hublin.janus.connector')
     start: 'start'
   })
 
-  .factory('janusFactory', function() {
-    function get($window) {
+  .factory('janusFactory', function($window) {
+    function get() {
       return $window.Janus;
     }
 
