@@ -145,6 +145,7 @@ angular.module('hublin.janus.connector')
     function attachFeeds(msg) {
       if (msg.publishers) {
         var publishers = msg.publishers;
+
         Janus.debug('Got a list of available publishers/feeds:');
         Janus.debug(publishers);
         publishers.forEach(function(publisher) {
@@ -155,6 +156,7 @@ angular.module('hublin.janus.connector')
 
     function unpublishFeed(msg) {
       var unpublishedFeed = null;
+
       for (var i = 0; i < REMOTE_VIDEO_IDS.length; i++) {
         if (feeds[i] && feeds[i].rfid === msg.unpublished) {
           unpublishedFeed = feeds[i];
@@ -238,6 +240,7 @@ angular.module('hublin.janus.connector')
 
       function handleOnRemoteStream(stream) {
         var element = currentConferenceState.getVideoElementById(REMOTE_VIDEO_IDS[remotePlugin.rfindex - 1]);
+
         Janus.attachMediaStream(element.get(0), stream);
       }
 

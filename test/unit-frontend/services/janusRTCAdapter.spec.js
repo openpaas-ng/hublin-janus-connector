@@ -163,8 +163,10 @@ describe('janusAdapter service', function() {
       var stream = 'stream';
       var Janus = janusRTCAdapter.lazyJanusInstance();
       var spy;
+
       janusFactory.get = function() {
         Janus.attachMediaStream = sinon.spy();
+
         return Janus;
       };
 
@@ -174,6 +176,7 @@ describe('janusAdapter service', function() {
             return 'YoYo';
           }
         };
+
         return element;
       };
 
@@ -196,6 +199,7 @@ describe('janusAdapter service', function() {
       it('should publish own feeds and attach remotefeeds', function() {
         var msg = { videoroom: 'joined', publishers: ['P1', 'P2'] };
         var jsSessionEstablishmentProtocol = null;
+
         plugin.createOffer = sinon.spy();
 
         janusRTCAdapter.setSfu(sfu);
@@ -234,6 +238,7 @@ describe('janusAdapter service', function() {
       it('should call unpublishFeed if event is unpublished', function() {
         var msg = { videoroom: 'event', unpublished: '0000' };
         var jsSessionEstablishmentProtocol = null;
+
         sfu.rfid = '0000';
         sfu.rfindex = 0;
         var feeds = [sfu];
@@ -275,6 +280,7 @@ describe('janusAdapter service', function() {
 
       plugin.createOffer = function(object) {
         var msg = { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true };
+
         expect(object.media).to.deep.equal(msg);
         expect(object.success).to.be.a('function');
         expect(object.error).to.be.a('function');
@@ -335,6 +341,7 @@ describe('janusAdapter service', function() {
 
   describe('The newRemoteFeeds method', function() {
     var id, display, Janus;
+
     beforeEach(function() {
       id = 0;
       display = 'Woot';
@@ -342,6 +349,7 @@ describe('janusAdapter service', function() {
       janusFactory.get = function() {
         Janus.attachMediaStream = sinon.spy();
         Janus.debug = function() { };
+
         return Janus;
       };
 
@@ -388,6 +396,7 @@ describe('janusAdapter service', function() {
             return 'YoYo';
           }
         };
+
         return element;
       };
       janusRTCAdapter.setSfu(sfu);
