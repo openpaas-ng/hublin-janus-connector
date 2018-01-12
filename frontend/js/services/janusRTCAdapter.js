@@ -26,9 +26,14 @@ angular.module('hublin.janus.connector')
     };
   })
 
-  .factory('janusRTCAdapter', function(currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
+  .factory('janusRTCAdapter', function($q, $log, currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
     var videoEnabled = true;
+    // TODO for janus
+    var canEnumerateDevices = true;
+    var NOT_CONNECTED = 0;
+    var BECOMING_CONNECTED = 1;
+    var IS_CONNECTED = 2;
 
     Janus = lazyJanusInstance();
     Janus.init({
@@ -61,7 +66,39 @@ angular.module('hublin.janus.connector')
       setPlugin: setPlugin,
       setSfu: setSfu,
       setFeeds: setFeeds,
-      setVideoEnabled: setVideoEnabled
+      // NOT IMPLEMENTED (BUT MUST!)
+      setVideoEnabled: setVideoEnabled,
+      setGotMedia: setGotMedia,
+      configureBandwidth: configureBandwidth,
+      enableVideo: enableVideo,
+      addDisconnectCallback: addDisconnectCallback,
+      removeDisconnectCallback: removeDisconnectCallback,
+      sendData: sendData,
+      myRtcid: myRtcid,
+      performCall: performCall,
+      canEnumerateDevices: canEnumerateDevices,
+      enableMicrophone: enableMicrophone,
+      muteRemoteMicrophone: muteRemoteMicrophone,
+      enableCamera: enableCamera,
+      setPeerListener: setPeerListener,
+      broadcastData: broadcastData,
+      broadcastMe: broadcastMe,
+      sendDataP2P: sendDataP2P,
+      sendDataWS: sendDataWS,
+      getP2PConnectionStatus: getP2PConnectionStatus,
+      doesDataChannelWork: doesDataChannelWork,
+      NOT_CONNECTED: NOT_CONNECTED,
+      BECOMING_CONNECTED: BECOMING_CONNECTED,
+      IS_CONNECTED: IS_CONNECTED,
+      addDataChannelOpenListener: addDataChannelOpenListener,
+      addDataChannelCloseListener: addDataChannelCloseListener,
+      removeDataChannelOpenListener: removeDataChannelOpenListener,
+      removeDataChannelCloseListener: removeDataChannelCloseListener,
+      addPeerListener: addPeerListener,
+      removePeerListener: removePeerListener,
+      connection: connection,
+      getOpenedDataChannels: getOpenedDataChannels
+
     };
 
     function lazyJanusInstance() {
@@ -309,4 +346,112 @@ angular.module('hublin.janus.connector')
       });
     }
 
+    function setGotMedia(callback) {
+      $log.warn('setGotMedia is not implemented in Janus connector');
+      callback();
+    }
+
+    function configureBandwidth(bitRates) {
+      $log.warn('configureBandwidth is not implemented in Janus connector', bitRates);
+    }
+
+    function enableVideo(videoChoice) {
+      $log.warn('enableVideo is not implemented in Janus connector', videoChoice);
+    }
+
+    function addDisconnectCallback() {
+      $log.warn('addDisconnectCallback is not implement in Janus connector');
+    }
+
+    function sendData(easyrtcid, msgType, data, ackhandler) {
+      $log.warn('sendData is not implement in Janus connector', easyrtcid, msgType, data, ackhandler);
+    }
+
+    function myRtcid() {
+      $log.warn('myRtcid is not implement in Janus connector');
+
+      return 'idontknow';
+    }
+
+    function performCall(otherRTCid) {
+      $log.warn('performCall is not implement in Janus connector', otherRTCid);
+    }
+
+    function enableMicrophone(muted) {
+      $log.warn('enableMicrophone is not implement in Janus connector', muted);
+    }
+
+    function muteRemoteMicrophone(rtcId, mute) {
+      $log.warn('muteRemoteMicrophone is not implement in Janus connector', rtcId, mute);
+    }
+
+    function enableCamera(videoMuted) {
+      $log.warn('enableCamera is not implement in Janus connector', videoMuted);
+    }
+
+    function setPeerListener(handler, msgType) {
+      $log.warn('setPeerListener is not implement in Janus connector', handler, msgType);
+    }
+
+    function broadcastData(msgType, data) {
+      $log.warn('broadcastData is not implement in Janus connector', msgType, data);
+    }
+
+    function broadcastMe() {
+      $log.warn('broadcastMe is not implement in Janus connector');
+    }
+
+    function removeDisconnectCallback(id) {
+      $log.warn('removeDisconnectCallback is not implement in Janus connector', id);
+    }
+
+    function sendDataP2P(rtcid, msgType, data) {
+      $log.warn('sendDataP2P is not implement in Janus connector', rtcid, msgType, data);
+    }
+
+    function sendDataWS(rtcid, msgType, data, ackhandler) {
+      $log.warn('sendDataWS is not implement in Janus connector', rtcid, msgType, data, ackhandler);
+    }
+
+    function getP2PConnectionStatus(rtcid) {
+      $log.warn('getP2PConnectionStatus is not implement in Janus connector', rtcid);
+    }
+
+    function doesDataChannelWork(rtcid) {
+      $log.warn('doesDataChannelWork is not implement in Janus connector', rtcid);
+    }
+
+    function addDataChannelOpenListener() {
+      $log.warn('addDataChannelOpenListener is not implement in Janus connector');
+    }
+
+    function addDataChannelCloseListener() {
+      $log.warn('addDataChannelCloseListener is not implement in Janus connector');
+    }
+
+    function removeDataChannelOpenListener() {
+      $log.warn('removeDataChannelOpenListener is not implement in Janus connector');
+    }
+
+    function removeDataChannelCloseListener() {
+      $log.warn('removeDataChannelCloseListener is not implement in Janus connector');
+    }
+
+    function addPeerListener() {
+      $log.warn('addPeerListener is not implement in Janus connector');
+    }
+
+    function removePeerListener() {
+      $log.warn('removePeerListener is not implement in Janus connector');
+    }
+
+    function connection() {
+      $log.warn('connection is not implement in Janus connector');
+
+      return $q.when({});
+    }
+
+    function getOpenedDataChannels() {
+      $log.warn('getOpenedDataChannels is not implement in Janus connector');
+    }
   });
