@@ -25,7 +25,7 @@ const janusConnector = new AwesomeModule(MODULE_NAME, {
       const webserverWrapper = dependencies('webserver-wrapper');
 
       webserverWrapper.injectAngularModules(APP_NAME, ['app.js', 'constants.js', 'run.js', 'services/janusRTCAdapter.js'], MODULE_NAME, ['live-conference']);
-      webserverWrapper.injectJSAsset('connector', ['connectorjanus/js/janus.js'], ['connector']);
+      webserverWrapper.injectJSAsset('connector', ['connectorjanus/js/thirdparty/adapter.js', 'connectorjanus/js/thirdparty/janus.js'], ['connector']);
       webserverWrapper.addApp(APP_NAME, app);
 
       callback();
