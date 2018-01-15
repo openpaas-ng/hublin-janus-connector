@@ -1,0 +1,2 @@
+- adapter.js: https://github.com/webrtc/adapter/blob/gh-pages/adapter.js
+- janus.js: https://github.com/meetecho/janus-gateway/blob/master/html/janus.js
