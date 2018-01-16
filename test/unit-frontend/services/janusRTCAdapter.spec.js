@@ -7,12 +7,22 @@ var expect = chai.expect;
 describe('janusAdapter service', function() {
   var currentConferenceState, janusDebugMock, janusInitMock, janusAttachMediaStreamMock,
     janusErrorMock, JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, plugin,
-    session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS;
+    session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config;
 
   LOCAL_VIDEO_ID = 'video-thumb0';
   REMOTE_VIDEO_IDS = ['video-thumb#1', 'video-thumb#2', 'video-thumb#3'];
 
-  currentConferenceState = {};
+  currentConferenceState = {
+    conference: {
+      configuration: {
+        hosts: {
+          find: function() {
+            return config;
+          }
+        }
+      }
+    }
+  };
 
   Janus = {};
 
@@ -70,6 +80,11 @@ describe('janusAdapter service', function() {
 
   describe('The connect method', function() {
     it('should call the init method of Janus', function(done) {
+      config = {
+        type: 'janus',
+        url: 'http://localhost:8088/janus'
+      };
+
       Janus = function(object) {
         expect(object.server).to.be.equal('http://localhost:8088/janus');
 
@@ -93,6 +108,11 @@ describe('janusAdapter service', function() {
     });
 
     it('should create a new Janus object', function() {
+      config = {
+        type: 'janus',
+        url: 'http://localhost:8088/janus'
+      };
+
       Janus = function(object) {
         expect(object.server).to.equal('http://localhost:8088/janus');
         expect(object.success).to.be.a('function');
@@ -107,6 +127,11 @@ describe('janusAdapter service', function() {
     });
 
     it('should call janus.attach if Janus session has been successfully created', function(done) {
+      config = {
+        type: 'janus',
+        url: 'http://localhost:8088/janus'
+      };
+
       Janus = function(object) {
         this.attach = function(object) {
           expect(object.plugin).to.equal('janus.plugin.videoroom');
@@ -117,6 +142,31 @@ describe('janusAdapter service', function() {
         //Timeout is necessary because the janus.js API is built that way :
         //the Janus function builds the object, then it calls the success callback which in turn calls the object that was just built.
         //if I do not add the timeout the success callback is executed before the object has been created
+        setTimeout(object.success, 0);
+      };
+
+      janusRTCAdapter.connect();
+    });
+
+    it('should use the default config if the conference don\'t have janus config', function(done) {
+      config = null;
+
+      Janus = function(object) {
+        expect(object.server).to.be.equal('http://localhost:8088/janus');
+
+        this.init = function(object) {
+          expect(object.debug).to.be.true;
+          expect(object.callback).to.be.a('function');
+          object.callback();
+        };
+
+        this.attach = function(object) {
+          expect(object).not.to.be.null;
+          expect(object.success).to.be.a('function');
+          expect(object.error).to.deep.equal(janusRTCAdapter.handleError);
+          done();
+        };
+
         setTimeout(object.success, 0);
       };
 
