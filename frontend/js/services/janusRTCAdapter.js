@@ -26,7 +26,7 @@ angular.module('hublin.janus.connector')
     };
   })
 
-  .factory('janusRTCAdapter', function($q, $log, currentConferenceState, janusFactory, session, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
+  .factory('janusRTCAdapter', function($q, $log, currentConferenceState, janusFactory, session, janusConfigurationService, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
     var videoEnabled = true;
     // TODO for janus
@@ -331,10 +331,11 @@ angular.module('hublin.janus.connector')
     }
 
     function connect() {
-      var Janus = lazyJanusInstance();
+      var Janus = lazyJanusInstance(),
+          conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(currentConferenceState.conference);
 
       selectiveForwardingUnit = new Janus({
-        server: JANUS_CONSTANTS.serverAddress,
+        server: conferenceJanusConfig.url,
         success: function() {
           Janus.debug('Session created!');
           selectiveForwardingUnit.attach({
