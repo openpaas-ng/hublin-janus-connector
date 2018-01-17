@@ -30,7 +30,7 @@ const janusConnector = new AwesomeModule(MODULE_NAME, {
         'services/janus-configuration.service.js'];
 
       webserverWrapper.injectAngularModules(APP_NAME, frontendModule, MODULE_NAME, ['live-conference']);
-      webserverWrapper.injectJSAsset('connector', ['connectorjanus/js/thirdparty/adapter.js', 'connectorjanus/js/thirdparty/janus.js'], ['connector']);
+      webserverWrapper.injectJSAsset('connector', ['connectorjanus/js/thirdparty/janus.js'], ['connector']);
       webserverWrapper.addApp(APP_NAME, app);
 
       callback();
