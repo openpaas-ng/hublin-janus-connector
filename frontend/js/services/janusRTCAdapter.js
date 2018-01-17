@@ -457,5 +457,7 @@ angular.module('hublin.janus.connector')
 
     function getOpenedDataChannels() {
       $log.warn('getOpenedDataChannels is not implement in Janus connector');
+
+      return [];
     }
   });
