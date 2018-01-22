@@ -27,7 +27,7 @@
     Janus.init({
       debug: true,
       callback: function() {
-        Janus.debug('Janus initialized');
+        $log.debug('Janus initialized');
         Janus.listDevices(function(results) {
           videoEnabled = results.some(function(devices) {
           return devices.kind === 'videoinput';
@@ -122,7 +122,7 @@
         },
         success: function(janusResponse) {
           if (!janusResponse || !janusResponse.exists) {
-            Janus.debug('Creating room: ' + janusResponse.room);
+            $log.debug('Creating room: ' + janusResponse.room);
 
             pluginHandle.send({
               message: {
@@ -140,7 +140,7 @@
       function joinRoom(janusResponse) {
         var username = session.getUsername();
 
-        Janus.debug('Joining room: ' + janusResponse.room);
+        $log.debug('Joining room: ' + janusResponse.room);
         pluginHandle.send({
           message: {
             request: JANUS_CONSTANTS.join,
@@ -160,13 +160,13 @@
     }
 
     function leaveRoom() {
-      Janus.debug('leaving a room');
+      $log.debug('leaving a room');
       plugin.send({
         message: {
           request: JANUS_CONSTANTS.unpublish
         }
       });
-      Janus.debug('unpublish request is sent');
+      $log.debug('unpublish request is sent');
     }
 
     function publishOwnFeed() {
@@ -175,7 +175,7 @@
         //the user receive and send both audio and video
         media: { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true },
         success: function(jsSessionEstablishmentProtocol) {
-          Janus.debug('Got publisher SDP!');
+          $log.debug('Got publisher SDP!');
           plugin.send({
             message: {
               request: JANUS_CONSTANTS.configure,
@@ -186,7 +186,7 @@
           });
         },
         error: function(error) {
-          Janus.error('WebRTC error:', error);
+          $log.error('WebRTC error:', error);
         }
       });
     }
@@ -195,8 +195,8 @@
       if (msg.publishers) {
         var publishers = msg.publishers;
 
-        Janus.debug('Got a list of available publishers/feeds:');
-        Janus.debug(publishers);
+        $log.debug('Got a list of available publishers/feeds:');
+        $log.debug(publishers);
         publishers.forEach(function(publisher) {
           newRemoteFeed(publisher.id, publisher.display);
         });
@@ -213,7 +213,7 @@
         }
       }
       if (unpublishedFeed) {
-        Janus.debug('Feed ' + unpublishedFeed.rfid + ' (' + unpublishedFeed.rfdisplay + ') has left the room, detaching');
+        $log.debug('Feed ' + unpublishedFeed.rfid + ' (' + unpublishedFeed.rfdisplay + ') has left the room, detaching');
         currentConferenceState.removeAttendee(unpublishedFeed.rfindex);
         feeds[unpublishedFeed.rfindex] = null;
         unpublishedFeed.detach();
@@ -239,11 +239,11 @@
     }
 
     function handleError(error) {
-      Janus.debug('Error: ' + error);
+      $log.debug('Error: ' + error);
     }
 
     function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
-      Janus.debug(' ::: Got a message (publisher) :::');
+      $log.debug('Got a message (publisher)');
       if (msg) {
         switch (msg.videoroom) {
           case JANUS_CONSTANTS.joined:
@@ -253,7 +253,7 @@
             handleEventMessage(msg);
             break;
           default:
-            Janus.debug('Not valid Event');
+            $log.debug('Not valid Event');
             break;
         }
       }
@@ -275,7 +275,7 @@
       var remotePlugin = {};
 
       function handleRemoteSuccessAttach(pluginHandle) {
-        Janus.debug('we are attaching a new feed');
+        $log.debug('we are attaching a new feed');
         remotePlugin = pluginHandle;
         pluginHandle.send({
           message: {
@@ -294,13 +294,13 @@
       }
 
       function handleJsep(jsSessionEstablishmentProtocol) {
-        Janus.debug('Handling SDP as well...');
+        $log.debug('Handling SDP as well...');
         // Answer and attach
         remotePlugin.createAnswer({
           media: {video: true, audio: true},
           jsep: jsSessionEstablishmentProtocol,
           success: function(jsSessionEstablishmentProtocol) {
-            Janus.debug('Got SDP! JSEP');
+            $log.debug('Got SDP! JSEP');
             remotePlugin.send({
               message: { request: JANUS_CONSTANTS.start, room: session.conference.roomId },
               jsep: jsSessionEstablishmentProtocol
@@ -324,7 +324,7 @@
       }
 
       function handleRemoteOnMessage(msg, jsSessionEstablishmentProtocol) {
-        Janus.debug('Handling remote message', msg);
+        $log.debug('Handling remote message', msg);
         if (jsSessionEstablishmentProtocol) {
           handleJsep(jsSessionEstablishmentProtocol);
         }
@@ -349,7 +349,7 @@
       selectiveForwardingUnit = new Janus({
         server: conferenceJanusConfig.url,
         success: function() {
-          Janus.debug('Session created!');
+          $log.debug('Session created!');
           selectiveForwardingUnit.attach({
             plugin: JANUS_CONSTANTS.videoroom,
             success: handleSuccessAttach,
