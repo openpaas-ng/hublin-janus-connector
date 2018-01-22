@@ -337,10 +337,12 @@
     }
 
     function connect() {
-      var conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(currentConferenceState.conference);
+      var conference = currentConferenceState.conference;
+      var conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(conference);
 
       janus = new Janus({
         server: conferenceJanusConfig.url,
+        iceServers: conference.iceServers,
         success: function() {
           $log.debug('Session created!');
           janus.attach({

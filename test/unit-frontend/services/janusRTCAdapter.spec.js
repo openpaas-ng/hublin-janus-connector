@@ -77,6 +77,9 @@ describe('janusAdapter service', function() {
 
   describe('The connect method', function() {
     it('should instanciate a new janus client instance', function() {
+      var servers = ['foo', 'bar'];
+
+      currentConferenceState.conference.iceServers = servers;
       config = {
         type: 'janus',
         url: 'http://localhost:8088/janus'
@@ -86,6 +89,7 @@ describe('janusAdapter service', function() {
 
       expect(janusInitMock).to.have.been.called;
       expect(janusOptions.server).to.equal(config.url);
+      expect(janusOptions.iceServers).to.equal(servers);
       expect(janusOptions.success).to.be.a('function');
       expect(janusOptions.error).to.be.a('function');
     });
