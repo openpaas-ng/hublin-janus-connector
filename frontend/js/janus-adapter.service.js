@@ -23,7 +23,7 @@
     var BECOMING_CONNECTED = 1;
     var IS_CONNECTED = 2;
 
-    Janus = lazyJanusInstance();
+    Janus = janusFactory.get();
     Janus.init({
       debug: true,
       callback: function() {
@@ -41,7 +41,6 @@
       getPlugin: getPlugin,
       getSfu: getSfu,
       handleSuccessAttach: handleSuccessAttach,
-      lazyJanusInstance: lazyJanusInstance,
       handleError: handleError,
       handleEventMessage: handleEventMessage,
       handleJoinedMessage: handleJoinedMessage,
@@ -88,10 +87,6 @@
       getOpenedDataChannels: getOpenedDataChannels
 
     };
-
-    function lazyJanusInstance() {
-      return janusFactory.get();
-    }
 
     function getPlugin() {
       return plugin;
@@ -153,7 +148,7 @@
     }
 
     function handleLocalStream(localStream) {
-      var Janus = lazyJanusInstance();
+      var Janus = janusFactory.get();
       var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
 
       Janus.attachMediaStream(element, localStream);
@@ -343,8 +338,8 @@
     }
 
     function connect() {
-      var Janus = lazyJanusInstance(),
-          conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(currentConferenceState.conference);
+      var Janus = janusFactory.get();
+      var conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(currentConferenceState.conference);
 
       selectiveForwardingUnit = new Janus({
         server: conferenceJanusConfig.url,

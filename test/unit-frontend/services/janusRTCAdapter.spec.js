@@ -248,7 +248,6 @@ describe('janusAdapter service', function() {
   describe('The handleLocalStream method', function() {
     it('should call Janus attachMediaStream', function() {
       var stream = 'stream';
-      var Janus = janusRTCAdapter.lazyJanusInstance();
       var spy;
 
       janusFactory.get = function() {
@@ -279,7 +278,6 @@ describe('janusAdapter service', function() {
     beforeEach(function() {
       currentConferenceState.pushAttendee = sinon.spy();
       currentConferenceState.removeAttendee = sinon.spy();
-      janusRTCAdapter.lazyJanusInstance();
     });
 
     describe('should call handleJoined Message if msg.videoroom is joined', function() {
@@ -384,7 +382,6 @@ describe('janusAdapter service', function() {
         object.success(jsep);
       };
       plugin.send = sinon.spy();
-      janusRTCAdapter.lazyJanusInstance();
       janusRTCAdapter.setPlugin(plugin);
       janusRTCAdapter.publishOwnFeed();
 
@@ -420,7 +417,6 @@ describe('janusAdapter service', function() {
     it('should send unpublish request', function() {
       plugin.send = sinon.spy();
 
-      janusRTCAdapter.lazyJanusInstance();
       janusRTCAdapter.setPlugin(plugin);
       janusRTCAdapter.leaveRoom();
 
@@ -441,8 +437,6 @@ describe('janusAdapter service', function() {
 
         return Janus;
       };
-
-      janusRTCAdapter.lazyJanusInstance();
     });
     it('should attach remote feeds', function() {
       sfu.attach = function(object) {
