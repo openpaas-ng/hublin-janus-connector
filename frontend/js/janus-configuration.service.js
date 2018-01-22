@@ -1,11 +1,10 @@
-(function() {
+(function(angular) {
   'use strict';
 
   angular.module('hublin.janus.connector')
     .service('janusConfigurationService', janusConfigurationService);
 
-  function janusConfigurationService($window) {
-
+  function janusConfigurationService($window, JANUS_CONSTANTS) {
     return {
       getConferenceConfiguration: getConferenceConfiguration
     };
@@ -18,11 +17,11 @@
       if (!configuration) {
         return {
           type: 'janus',
-          url: $window.location.protocol + '//' + $window.location.hostname + ':8088/janus'
+          url: $window.location.protocol + '//' + $window.location.hostname + ':' + JANUS_CONSTANTS.janusPort + '/janus'
         };
       }
 
       return configuration;
     }
   }
-})();
+})(angular);
