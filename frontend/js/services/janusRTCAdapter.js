@@ -2,8 +2,9 @@
 
 angular.module('hublin.janus.connector')
   .constant('JANUS_CONSTANTS', {
+    create: 'create',
     join: 'join',
-    defaultRoom: 1234,
+    exists: 'exists',
     publisher: 'publisher',
     listener: 'listener',
     serverAddress: 'http://localhost:8088/janus',
@@ -126,18 +127,42 @@ angular.module('hublin.janus.connector')
 
     function handleSuccessAttach(pluginHandle) {
       setPlugin(pluginHandle);
-      var username = session.getUsername();
 
-      //The number of the room is the default room used by Janus.
-      //It is only used temporarily, until we implement dynamic room creation.
       pluginHandle.send({
         message: {
-          request: JANUS_CONSTANTS.join,
-          room: JANUS_CONSTANTS.defaultRoom,
-          ptype: JANUS_CONSTANTS.publisher,
-          display: username
+          request: JANUS_CONSTANTS.exists,
+          room: session.conference.roomId
+        },
+        success: function(janusResponse) {
+          if (!janusResponse || !janusResponse.exists) {
+            Janus.debug('Creating room: ' + janusResponse.room);
+
+            pluginHandle.send({
+              message: {
+                request: JANUS_CONSTANTS.create,
+                room: janusResponse.room
+              },
+              success: joinRoom
+            });
+          } else {
+            joinRoom(janusResponse);
+          }
         }
       });
+
+      function joinRoom(janusResponse) {
+        var username = session.getUsername();
+
+        Janus.debug('Joining room: ' + janusResponse.room);
+        pluginHandle.send({
+          message: {
+            request: JANUS_CONSTANTS.join,
+            room: janusResponse.room,
+            ptype: JANUS_CONSTANTS.publisher,
+            display: username
+          }
+        });
+      }
     }
 
     function handleLocalStream(localStream) {
@@ -268,7 +293,7 @@ angular.module('hublin.janus.connector')
         pluginHandle.send({
           message: {
             request: JANUS_CONSTANTS.join,
-            room: JANUS_CONSTANTS.defaultRoom,
+            room: session.conference.roomId,
             ptype: JANUS_CONSTANTS.listener,
             feed: id
           }
@@ -290,7 +315,7 @@ angular.module('hublin.janus.connector')
           success: function(jsSessionEstablishmentProtocol) {
             Janus.debug('Got SDP! JSEP');
             remotePlugin.send({
-              message: { request: JANUS_CONSTANTS.start, room: JANUS_CONSTANTS.defaultRoom },
+              message: { request: JANUS_CONSTANTS.start, room: session.conference.roomId },
               jsep: jsSessionEstablishmentProtocol
             });
           },

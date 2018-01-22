@@ -28,7 +28,10 @@ describe('janusAdapter service', function() {
 
   session = {
     getUsername: function() { return 'Woot'; },
-    getUserId: function() { return '0000'; }
+    getUserId: function() { return '0000'; },
+    conference: {
+      roomId: 12345
+    }
   };
 
   plugin = {
@@ -176,14 +179,54 @@ describe('janusAdapter service', function() {
 
   describe('handleSuccessAttach method', function() {
     var pluginHandle = {};
+    var createRequestSpy, existsRequestSpy, joinRequestSpy;
+    var response = {
+      exists: false
+    };
 
-    it('should send message', function() {
-      pluginHandle.send = sinon.spy();
+    beforeEach(function() {
+      createRequestSpy = sinon.spy();
+      existsRequestSpy = sinon.spy();
+      joinRequestSpy = sinon.spy();
+
+      pluginHandle.send = function(request) {
+        switch (request.message.request) {
+          case 'create': createRequestSpy(request);
+            break;
+          case 'exists': existsRequestSpy(request);
+            break;
+          case 'join': joinRequestSpy(request);
+            break;
+        }
+        if (request.success) {
+          response.room = request && request.message && request.message.room;
+          request.success(response);
+        }
+      };
+    });
+
+    it('should check if room exists', function() {
+      response.exists = true;
+
       janusRTCAdapter.handleSuccessAttach(pluginHandle);
 
       expect(janusRTCAdapter.getPlugin()).to.be.equal(pluginHandle);
-      expect(janusRTCAdapter.getPlugin().send).to.have.been.calledWith({ message: { request: 'join', room: 1234, ptype: 'publisher', display: 'Woot' } });
+      expect(existsRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'exists', room: 12345 }}));
+      expect(createRequestSpy).to.not.have.been.called;
+      expect(joinRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'join', room: 12345, ptype: 'publisher', display: 'Woot' } }));
     });
+
+    it('should send message', function() {
+      response.exists = false;
+
+      janusRTCAdapter.handleSuccessAttach(pluginHandle);
+
+      expect(janusRTCAdapter.getPlugin()).to.be.equal(pluginHandle);
+      expect(existsRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'exists', room: 12345 }}));
+      expect(createRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'create', room: 12345 }}));
+      expect(joinRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'join', room: 12345, ptype: 'publisher', display: 'Woot' } }));
+    });
+
   });
 
   describe('The handle error method', function() {
@@ -428,7 +471,7 @@ describe('janusAdapter service', function() {
       janusRTCAdapter.setSfu(sfu);
       janusRTCAdapter.newRemoteFeed(id, display);
 
-      expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 1234, ptype: 'listener', feed: 0 } });
+      expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 12345, ptype: 'listener', feed: 0 } });
     });
 
     it('should call handleOnRemoteStream when onremotestream callback is excuted', function() {
