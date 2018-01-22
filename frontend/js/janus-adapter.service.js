@@ -1,33 +1,20 @@
-'use strict';
+(function(angular) {
+  'use strict';
 
-angular.module('hublin.janus.connector')
-  .constant('JANUS_CONSTANTS', {
-    create: 'create',
-    join: 'join',
-    exists: 'exists',
-    publisher: 'publisher',
-    listener: 'listener',
-    serverAddress: 'http://localhost:8088/janus',
-    videoroom: 'janus.plugin.videoroom',
-    configure: 'configure',
-    joined: 'joined',
-    attached: 'attached',
-    event: 'event',
-    unpublish: 'unpublish',
-    start: 'start'
-  })
+  angular.module('hublin.janus.connector')
+    .factory('janusRTCAdapter', janusRTCAdapter);
 
-  .factory('janusFactory', function($window) {
-    function get() {
-      return $window.Janus;
-    }
-
-    return {
-      get: get
-    };
-  })
-
-  .factory('janusRTCAdapter', function($q, $log, currentConferenceState, janusFactory, session, janusConfigurationService, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, JANUS_CONSTANTS) {
+  function janusRTCAdapter(
+    $q,
+    $log,
+    currentConferenceState,
+    janusFactory,
+    session,
+    janusConfigurationService,
+    LOCAL_VIDEO_ID,
+    REMOTE_VIDEO_IDS,
+    JANUS_CONSTANTS
+  ) {
     var selectiveForwardingUnit, Janus, plugin, feeds = [];
     var videoEnabled = true;
     // TODO for janus
@@ -485,4 +472,5 @@ angular.module('hublin.janus.connector')
 
       return [];
     }
-  });
+  }
+})(angular);
