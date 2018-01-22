@@ -5,9 +5,9 @@
 var expect = chai.expect;
 
 describe('janusAdapter service', function() {
-  var currentConferenceState, janusDebugMock, janusInitMock, janusAttachMediaStreamMock,
-    janusErrorMock, JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, plugin,
-    session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config;
+  var currentConferenceState, janusInitMock, janusAttachMediaStreamMock,
+    JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, plugin,
+    session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config, $log;
 
   LOCAL_VIDEO_ID = 'video-thumb0';
   REMOTE_VIDEO_IDS = ['video-thumb#1', 'video-thumb#2', 'video-thumb#3'];
@@ -40,22 +40,13 @@ describe('janusAdapter service', function() {
 
   beforeEach(function() {
     janusInitMock = sinon.spy();
-
-    janusDebugMock = sinon.spy();
-
     janusAttachMediaStreamMock = sinon.spy();
-
-    janusErrorMock = sinon.spy();
-
     JanusListDevicesMock = sinon.spy();
 
     janusFactory = {
       get: function() {
-
         Janus.init = janusInitMock;
-        Janus.debug = janusDebugMock;
         Janus.attachMediaStream = janusAttachMediaStreamMock;
-        Janus.error = janusErrorMock;
         Janus.listDevices = JanusListDevicesMock;
 
         return Janus;
@@ -75,8 +66,9 @@ describe('janusAdapter service', function() {
       $provide.value('REMOTE_VIDEO_IDS', REMOTE_VIDEO_IDS);
     });
 
-    angular.mock.inject(function(_janusRTCAdapter_) {
+    angular.mock.inject(function(_janusRTCAdapter_, _$log_) {
       janusRTCAdapter = _janusRTCAdapter_;
+      $log = _$log_;
     });
 
   });
@@ -230,10 +222,12 @@ describe('janusAdapter service', function() {
   });
 
   describe('The handle error method', function() {
-    it('should call Janus debug', function() {
+    it('should log error', function() {
+      var logSpy = sinon.spy($log, 'debug');
+
       janusRTCAdapter.handleError('error');
 
-      expect(janusDebugMock).to.have.been.called;
+      expect(logSpy).to.have.been.calledWith(sinon.match(/Error/));
     });
   });
 
@@ -398,6 +392,8 @@ describe('janusAdapter service', function() {
     });
 
     it('should throw error when it does not get publisher SDP ', function() {
+      var logErrorSpy = sinon.spy($log, 'error');
+
       plugin.createOffer = function(object) {
         object.error();
       };
@@ -405,7 +401,7 @@ describe('janusAdapter service', function() {
       janusRTCAdapter.setPlugin(plugin);
       janusRTCAdapter.publishOwnFeed();
 
-      expect(Janus.error).to.have.been.called;
+      expect(logErrorSpy).to.have.been.calledWith(sinon.match(/WebRTC error/));
     });
   });
 
