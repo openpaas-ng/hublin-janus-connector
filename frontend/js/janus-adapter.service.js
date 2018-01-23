@@ -344,17 +344,25 @@
         server: conferenceJanusConfig.url,
         iceServers: conference.iceServers,
         success: function() {
-          $log.debug('Session created!');
+          $log.debug('Janus session created, attaching videoroom...');
           janus.attach({
             plugin: JANUS_CONSTANTS.videoroom,
             success: handleSuccessAttach,
-            error: handleError,
+            error: onAttachError,
             onmessage: handleOnMessage,
             onlocalstream: handleLocalStream
           });
         },
-        error: handleError
+        error: onJanusInstanceError
       });
+
+      function onAttachError(err) {
+        $log.error('Error on janus.attach after instanciating Janus', err);
+      }
+
+      function onJanusInstanceError(err) {
+        $log.error('Error while instanciating Janus', err);
+      }
     }
 
     function setGotMedia(callback) {
