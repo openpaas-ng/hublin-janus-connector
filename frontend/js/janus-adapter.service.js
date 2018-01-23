@@ -15,23 +15,23 @@
     REMOTE_VIDEO_IDS,
     JANUS_CONSTANTS
   ) {
-    var selectiveForwardingUnit, Janus, plugin, feeds = [];
+    var janus, plugin, feeds = [];
     var videoEnabled = true;
     // TODO for janus
     var canEnumerateDevices = true;
     var NOT_CONNECTED = 0;
     var BECOMING_CONNECTED = 1;
     var IS_CONNECTED = 2;
+    var Janus = janusFactory.get();
 
-    Janus = lazyJanusInstance();
     Janus.init({
       debug: true,
       callback: function() {
         $log.debug('Janus initialized');
         Janus.listDevices(function(results) {
           videoEnabled = results.some(function(devices) {
-          return devices.kind === 'videoinput';
-        });
+            return devices.kind === 'videoinput';
+          });
         });
       }
     });
@@ -41,7 +41,6 @@
       getPlugin: getPlugin,
       getSfu: getSfu,
       handleSuccessAttach: handleSuccessAttach,
-      lazyJanusInstance: lazyJanusInstance,
       handleError: handleError,
       handleEventMessage: handleEventMessage,
       handleJoinedMessage: handleJoinedMessage,
@@ -89,10 +88,6 @@
 
     };
 
-    function lazyJanusInstance() {
-      return janusFactory.get();
-    }
-
     function getPlugin() {
       return plugin;
     }
@@ -103,10 +98,10 @@
 
     //used for tests
     function setSfu(_selectiveForwardingUnit) {
-      selectiveForwardingUnit = _selectiveForwardingUnit;
+      janus = _selectiveForwardingUnit;
     }
     function getSfu() {
-      return selectiveForwardingUnit;
+      return janus;
     }
     function setFeeds(_feeds) {
       feeds = _feeds;
@@ -153,7 +148,6 @@
     }
 
     function handleLocalStream(localStream) {
-      var Janus = lazyJanusInstance();
       var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
 
       Janus.attachMediaStream(element, localStream);
@@ -333,7 +327,7 @@
         }
       }
 
-      selectiveForwardingUnit.attach({
+      janus.attach({
         plugin: JANUS_CONSTANTS.videoroom,
         success: handleRemoteSuccessAttach,
         error: handleError,
@@ -343,14 +337,15 @@
     }
 
     function connect() {
-      var Janus = lazyJanusInstance(),
-          conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(currentConferenceState.conference);
+      var conference = currentConferenceState.conference;
+      var conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(conference);
 
-      selectiveForwardingUnit = new Janus({
+      janus = new Janus({
         server: conferenceJanusConfig.url,
+        iceServers: conference.iceServers,
         success: function() {
           $log.debug('Session created!');
-          selectiveForwardingUnit.attach({
+          janus.attach({
             plugin: JANUS_CONSTANTS.videoroom,
             success: handleSuccessAttach,
             error: handleError,

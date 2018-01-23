@@ -5,7 +5,7 @@
 var expect = chai.expect;
 
 describe('janusAdapter service', function() {
-  var currentConferenceState, janusInitMock, janusAttachMediaStreamMock,
+  var currentConferenceState, attachSpy, janusOptions, janusInitMock, janusAttachMediaStreamMock,
     JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, plugin,
     session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config, $log;
 
@@ -24,7 +24,12 @@ describe('janusAdapter service', function() {
     }
   };
 
-  Janus = {};
+  Janus = function(options) {
+    janusOptions = options;
+  };
+
+  attachSpy = sinon.spy();
+  Janus.prototype.attach = attachSpy;
 
   session = {
     getUsername: function() { return 'Woot'; },
@@ -43,15 +48,12 @@ describe('janusAdapter service', function() {
     janusAttachMediaStreamMock = sinon.spy();
     JanusListDevicesMock = sinon.spy();
 
-    janusFactory = {
-      get: function() {
-        Janus.init = janusInitMock;
-        Janus.attachMediaStream = janusAttachMediaStreamMock;
-        Janus.listDevices = JanusListDevicesMock;
+    janusFactory = {};
 
-        return Janus;
-      }
-    };
+    Janus.init = janusInitMock;
+    Janus.attachMediaStream = janusAttachMediaStreamMock;
+    Janus.listDevices = JanusListDevicesMock;
+    janusFactory.get = sinon.stub().returns(Janus);
 
     sfu = {
       attach: sinon.spy(),
@@ -74,98 +76,46 @@ describe('janusAdapter service', function() {
   });
 
   describe('The connect method', function() {
-    it('should call the init method of Janus', function(done) {
+    it('should instanciate a new janus client instance', function() {
+      var servers = ['foo', 'bar'];
+
+      currentConferenceState.conference.iceServers = servers;
       config = {
         type: 'janus',
         url: 'http://localhost:8088/janus'
       };
 
-      Janus = function(object) {
-        expect(object.server).to.be.equal('http://localhost:8088/janus');
-
-        this.init = function(object) {
-          expect(object.debug).to.be.true;
-          expect(object.callback).to.be.a('function');
-          object.callback();
-        };
-
-        this.attach = function(object) {
-          expect(object).not.to.be.null;
-          expect(object.success).to.be.a('function');
-          expect(object.error).to.deep.equal(janusRTCAdapter.handleError);
-          done();
-        };
-
-        setTimeout(object.success, 0);
-      };
-
       janusRTCAdapter.connect();
+
+      expect(janusInitMock).to.have.been.called;
+      expect(janusOptions.server).to.equal(config.url);
+      expect(janusOptions.iceServers).to.equal(servers);
+      expect(janusOptions.success).to.be.a('function');
+      expect(janusOptions.error).to.be.a('function');
     });
 
-    it('should create a new Janus object', function() {
+    it('should call janus.attach if Janus session has been successfully created', function() {
       config = {
         type: 'janus',
         url: 'http://localhost:8088/janus'
       };
 
-      Janus = function(object) {
-        expect(object.server).to.equal('http://localhost:8088/janus');
-        expect(object.success).to.be.a('function');
-        expect(object.error).to.be.a('function');
-
-        this.init = function(object) {
-          object.callback();
-        };
-      };
-
       janusRTCAdapter.connect();
+      janusOptions.success();
+
+      expect(attachSpy).to.have.been.calledWith({
+        plugin: 'janus.plugin.videoroom',
+        success: sinon.match.func,
+        error: sinon.match.func,
+        onmessage: sinon.match.func,
+        onlocalstream: sinon.match.func
+      });
     });
 
-    it('should call janus.attach if Janus session has been successfully created', function(done) {
-      config = {
-        type: 'janus',
-        url: 'http://localhost:8088/janus'
-      };
-
-      Janus = function(object) {
-        this.attach = function(object) {
-          expect(object.plugin).to.equal('janus.plugin.videoroom');
-          expect(object.success).to.be.a('function');
-          expect(object.error).to.be.a('function');
-          done();
-        };
-        //Timeout is necessary because the janus.js API is built that way :
-        //the Janus function builds the object, then it calls the success callback which in turn calls the object that was just built.
-        //if I do not add the timeout the success callback is executed before the object has been created
-        setTimeout(object.success, 0);
-      };
-
-      janusRTCAdapter.connect();
-    });
-
-    it('should use the default config if the conference don\'t have janus config', function(done) {
+    it('should use the default config if the conference do not have janus config', function() {
       config = null;
 
-      Janus = function(object) {
-        expect(object.server).to.be.equal('http://localhost:8088/janus');
-
-        this.init = function(object) {
-          expect(object.debug).to.be.true;
-          expect(object.callback).to.be.a('function');
-          object.callback();
-        };
-
-        this.attach = function(object) {
-          expect(object).not.to.be.null;
-          expect(object.success).to.be.a('function');
-          expect(object.error).to.deep.equal(janusRTCAdapter.handleError);
-          done();
-        };
-
-        setTimeout(object.success, 0);
-      };
-
-      janusRTCAdapter.connect();
+      expect(janusOptions.server).to.equal('http://localhost:8088/janus');
     });
   });
 
@@ -248,7 +198,6 @@ describe('janusAdapter service', function() {
   describe('The handleLocalStream method', function() {
     it('should call Janus attachMediaStream', function() {
       var stream = 'stream';
-      var Janus = janusRTCAdapter.lazyJanusInstance();
       var spy;
 
       janusFactory.get = function() {
@@ -279,7 +228,6 @@ describe('janusAdapter service', function() {
     beforeEach(function() {
       currentConferenceState.pushAttendee = sinon.spy();
       currentConferenceState.removeAttendee = sinon.spy();
-      janusRTCAdapter.lazyJanusInstance();
     });
 
     describe('should call handleJoined Message if msg.videoroom is joined', function() {
@@ -384,7 +332,6 @@ describe('janusAdapter service', function() {
         object.success(jsep);
       };
       plugin.send = sinon.spy();
-      janusRTCAdapter.lazyJanusInstance();
       janusRTCAdapter.setPlugin(plugin);
       janusRTCAdapter.publishOwnFeed();
 
@@ -420,7 +367,6 @@ describe('janusAdapter service', function() {
     it('should send unpublish request', function() {
       plugin.send = sinon.spy();
 
-      janusRTCAdapter.lazyJanusInstance();
       janusRTCAdapter.setPlugin(plugin);
       janusRTCAdapter.leaveRoom();
 
@@ -441,8 +387,6 @@ describe('janusAdapter service', function() {
 
         return Janus;
       };
-
-      janusRTCAdapter.lazyJanusInstance();
     });
     it('should attach remote feeds', function() {
       sfu.attach = function(object) {
