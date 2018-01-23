@@ -53,6 +53,7 @@
       setPlugin: setPlugin,
       setSfu: setSfu,
       setFeeds: setFeeds,
+      myRtcid: myRtcid,
       // NOT IMPLEMENTED (BUT MUST!)
       setVideoEnabled: setVideoEnabled,
       setGotMedia: setGotMedia,
@@ -61,7 +62,6 @@
       addDisconnectCallback: addDisconnectCallback,
       removeDisconnectCallback: removeDisconnectCallback,
       sendData: sendData,
-      myRtcid: myRtcid,
       performCall: performCall,
       canEnumerateDevices: canEnumerateDevices,
       enableMicrophone: enableMicrophone,
@@ -223,10 +223,7 @@
     }
 
     function handleJoinedMessage(msg) {
-      var myid = msg.id;
-      var index = 0;
-
-      currentConferenceState.pushAttendee(index, myid, session.getUserId(), session.getUsername());
+      currentConferenceState.pushAttendee(0, msg.id, session.getUserId(), session.getUsername());
 
       publishOwnFeed();
       attachFeeds(msg);
@@ -344,17 +341,25 @@
         server: conferenceJanusConfig.url,
         iceServers: conference.iceServers,
         success: function() {
-          $log.debug('Session created!');
+          $log.debug('Janus session created, attaching videoroom...');
           janus.attach({
             plugin: JANUS_CONSTANTS.videoroom,
             success: handleSuccessAttach,
-            error: handleError,
+            error: onAttachError,
             onmessage: handleOnMessage,
             onlocalstream: handleLocalStream
           });
         },
-        error: handleError
+        error: onJanusInstanceError
       });
+
+      function onAttachError(err) {
+        $log.error('Error on janus.attach after instanciating Janus', err);
+      }
+
+      function onJanusInstanceError(err) {
+        $log.error('Error while instanciating Janus', err);
+      }
     }
 
     function setGotMedia(callback) {
@@ -379,9 +384,7 @@
     }
 
     function myRtcid() {
-      $log.warn('myRtcid is not implement in Janus connector');
-
-      return 'idontknow';
+      return getPlugin() && getPlugin().getId();
     }
 
     function performCall(otherRTCid) {
