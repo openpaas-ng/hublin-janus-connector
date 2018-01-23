@@ -276,7 +276,7 @@ describe('janusAdapter service', function() {
     });
 
     describe('should call handleEvent Message if msg.videoroom is event', function() {
-      it('should call attach in newRemotefeed as many times as msg.publishers length', function() {
+      it('should call attach in subscribeToRemoteFeed as many times as msg.publishers length', function() {
         var msg = { videoroom: 'event', publishers: ['P1', 'P2'] };
         var jsSessionEstablishmentProtocol = null;
 
@@ -391,7 +391,7 @@ describe('janusAdapter service', function() {
     });
   });
 
-  describe('The newRemoteFeeds method', function() {
+  describe('The subscribeToRemoteFeeds method', function() {
     var id, display, Janus;
 
     beforeEach(function() {
@@ -415,7 +415,7 @@ describe('janusAdapter service', function() {
       };
 
       janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.newRemoteFeed(id, display);
+      janusRTCAdapter.subscribeToRemoteFeed(id, display);
     });
 
     it('should call handleRemoteSuccessAttach when success callback is excuted', function() {
@@ -426,7 +426,7 @@ describe('janusAdapter service', function() {
         object.success(pluginHandle);
       };
       janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.newRemoteFeed(id, display);
+      janusRTCAdapter.subscribeToRemoteFeed(id, display);
 
       expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 12345, ptype: 'listener', feed: 0 } });
     });
@@ -450,7 +450,7 @@ describe('janusAdapter service', function() {
         return element;
       };
       janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.newRemoteFeed(id, display);
+      janusRTCAdapter.subscribeToRemoteFeed(id, display);
 
       expect(janusAttachMediaStreamMock).to.have.been.calledWith('YoYo', 'remoteStream');
     });
@@ -473,7 +473,7 @@ describe('janusAdapter service', function() {
 
       janusRTCAdapter.setSfu(sfu);
       janusRTCAdapter.setFeeds(feeds);
-      janusRTCAdapter.newRemoteFeed(id, display);
+      janusRTCAdapter.subscribeToRemoteFeed(id, display);
 
       expect(pluginHandle.createAnswer).to.be.called;
       expect(currentConferenceState.pushAttendee).to.be.calledWith(2, 7777, null, display);

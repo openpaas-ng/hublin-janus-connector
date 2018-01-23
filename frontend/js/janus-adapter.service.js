@@ -47,7 +47,7 @@
       handleLocalStream: handleLocalStream,
       handleOnMessage: handleOnMessage,
       leaveRoom: leaveRoom,
-      newRemoteFeed: newRemoteFeed,
+      subscribeToRemoteFeed: subscribeToRemoteFeed,
       isVideoEnabled: isVideoEnabled,
       publishOwnFeed: publishOwnFeed,
       setPlugin: setPlugin,
@@ -185,16 +185,12 @@
       });
     }
 
-    function attachFeeds(msg) {
-      if (msg.publishers) {
-        var publishers = msg.publishers;
+    function subscribeToRemoteFeeds(list) {
+      $log.debug('Subscribe to remote feeds', list);
 
-        $log.debug('Got a list of available publishers/feeds:');
-        $log.debug(publishers);
-        publishers.forEach(function(publisher) {
-          newRemoteFeed(publisher.id, publisher.display);
-        });
-      }
+      list.forEach(function(item) {
+        subscribeToRemoteFeed(item.id, item.display);
+      });
     }
 
     function unpublishFeed(msg) {
@@ -216,7 +212,7 @@
 
     function handleEventMessage(msg) {
       if (msg.publishers) {
-        attachFeeds(msg);
+        subscribeToRemoteFeeds(msg.publishers);
       } else if (msg.unpublished) {
         unpublishFeed(msg);
       }
@@ -226,7 +222,8 @@
       currentConferenceState.pushAttendee(0, msg.id, session.getUserId(), session.getUsername());
 
       publishOwnFeed();
-      attachFeeds(msg);
+
+      msg.publishers && subscribeToRemoteFeeds(msg.publishers);
     }
 
     function handleError(error) {
@@ -262,11 +259,21 @@
       return videoEnabled;
     }
 
-    function newRemoteFeed(id, display) {
+    function subscribeToRemoteFeed(id, display) {
+      $log.info('Subscribing to remote feed', id, display);
       var remotePlugin = {};
 
-      function handleRemoteSuccessAttach(pluginHandle) {
-        $log.debug('we are attaching a new feed');
+      janus.attach({
+        plugin: JANUS_CONSTANTS.videoroom,
+        success: handleRemoteSuccess,
+        error: handleOnRemoteError,
+        onremotestream: handleOnRemoteStream,
+        onmessage: handleOnRemoteMessage
+      });
+
+      function handleRemoteSuccess(pluginHandle) {
+        $log.debug('Attaching a new remote feed with id', id);
+
         remotePlugin = pluginHandle;
         pluginHandle.send({
           message: {
@@ -278,10 +285,39 @@
         });
       }
 
+      function handleOnRemoteError(err) {
+        $log.error('Error while attaching remote stream for id', id, err);
+      }
+
       function handleOnRemoteStream(stream) {
         var element = currentConferenceState.getVideoElementById(REMOTE_VIDEO_IDS[remotePlugin.rfindex - 1]);
 
         Janus.attachMediaStream(element.get(0), stream);
+      }
+
+      function handleOnRemoteMessage(msg, jsSessionEstablishmentProtocol) {
+        $log.debug('Handling remote message', msg);
+        if (jsSessionEstablishmentProtocol) {
+          handleJsep(jsSessionEstablishmentProtocol);
+        }
+        if (msg && msg.videoroom === JANUS_CONSTANTS.attached) {
+          handleAttachedMessage(msg);
+        }
+      }
+
+      function handleAttachedMessage(msg) {
+        remotePlugin.rfid = msg.id;
+        remotePlugin.rfdisplay = msg.display;
+
+        for (var i = 1; i <= REMOTE_VIDEO_IDS.length; i++) {
+          if (!feeds[i]) {
+            $log.info('Attached to remote feed id %s for user %s', msg.id, msg.display);
+            feeds[i] = remotePlugin;
+            remotePlugin.rfindex = i;
+            currentConferenceState.pushAttendee(remotePlugin.rfindex, remotePlugin.rfid, null, display);
+            break;
+          }
+        }
       }
 
       function handleJsep(jsSessionEstablishmentProtocol) {
@@ -297,40 +333,11 @@
               jsep: jsSessionEstablishmentProtocol
             });
           },
-          error: handleError
+          error: function(err) {
+            $log.error('Error while sending SDP answer', err);
+          }
         });
       }
-
-      function handleAttachedMessage(msg) {
-        remotePlugin.rfid = msg.id;
-        remotePlugin.rfdisplay = msg.display;
-        for (var i = 1; i <= REMOTE_VIDEO_IDS.length; i++) {
-          if (!feeds[i]) {
-            feeds[i] = remotePlugin;
-            remotePlugin.rfindex = i;
-            currentConferenceState.pushAttendee(remotePlugin.rfindex, remotePlugin.rfid, null, display);
-            break;
-          }
-        }
-      }
-
-      function handleRemoteOnMessage(msg, jsSessionEstablishmentProtocol) {
-        $log.debug('Handling remote message', msg);
-        if (jsSessionEstablishmentProtocol) {
-          handleJsep(jsSessionEstablishmentProtocol);
-        }
-        if (msg && msg.videoroom === JANUS_CONSTANTS.attached) {
-          handleAttachedMessage(msg);
-        }
-      }
-
-      janus.attach({
-        plugin: JANUS_CONSTANTS.videoroom,
-        success: handleRemoteSuccessAttach,
-        error: handleError,
-        onremotestream: handleOnRemoteStream,
-        onmessage: handleRemoteOnMessage
-      });
     }
 
     function connect() {
