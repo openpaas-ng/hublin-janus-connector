@@ -40,7 +40,8 @@ describe('janusAdapter service', function() {
   };
 
   plugin = {
-    createOffer: function() { }
+    createOffer: function() { },
+    getId: sinon.stub()
   };
 
   beforeEach(function() {
@@ -73,6 +74,22 @@ describe('janusAdapter service', function() {
       $log = _$log_;
     });
 
+  });
+
+  describe('The myRtcid function', function() {
+    it('should return falsy when plugin is not defined', function() {
+      expect(janusRTCAdapter.myRtcid()).to.be.falsy;
+    });
+
+    it('should return the right id', function() {
+      var userId = 123456789;
+
+      plugin.getId.returns(userId);
+      janusRTCAdapter.setPlugin(plugin);
+
+      expect(janusRTCAdapter.myRtcid()).to.equal(userId);
+      expect(plugin.getId).to.have.been.calledOnce;
+    });
   });
 
   describe('The connect method', function() {
