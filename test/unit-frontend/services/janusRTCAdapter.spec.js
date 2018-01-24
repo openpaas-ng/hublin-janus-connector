@@ -5,7 +5,7 @@
 var expect = chai.expect;
 
 describe('janusAdapter service', function() {
-  var currentConferenceState, attachSpy, janusOptions, janusInitMock, janusAttachMediaStreamMock,
+  var currentConferenceState, attachSpy, janusFeedRegistry, janusOptions, janusInitMock, janusAttachMediaStreamMock,
     JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, plugin,
     session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config, $log;
 
@@ -69,8 +69,9 @@ describe('janusAdapter service', function() {
       $provide.value('REMOTE_VIDEO_IDS', REMOTE_VIDEO_IDS);
     });
 
-    angular.mock.inject(function(_janusRTCAdapter_, _$log_) {
+    angular.mock.inject(function(_janusRTCAdapter_, _$log_, _janusFeedRegistry_) {
       janusRTCAdapter = _janusRTCAdapter_;
+      janusFeedRegistry = _janusFeedRegistry_;
       $log = _$log_;
     });
 
@@ -190,7 +191,7 @@ describe('janusAdapter service', function() {
 
   describe('The handle error method', function() {
     it('should log error', function() {
-      var logSpy = sinon.spy($log, 'debug');
+      var logSpy = sinon.spy($log, 'error');
 
       janusRTCAdapter.handleError('error');
 
@@ -288,19 +289,16 @@ describe('janusAdapter service', function() {
       });
 
       it('should call unpublishFeed if event is unpublished', function() {
-        var msg = { videoroom: 'event', unpublished: '0000' };
-        var jsSessionEstablishmentProtocol = null;
+        var id = '0000';
+        var msg = { videoroom: 'event', unpublished: id };
+        var feed = { id: id, rfindex: 0, destroy: sinon.spy()};
 
-        sfu.rfid = '0000';
-        sfu.rfindex = 0;
-        var feeds = [sfu];
-
+        janusFeedRegistry.add(feed);
         janusRTCAdapter.setSfu(sfu);
-        janusRTCAdapter.setFeeds(feeds);
-        janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
+        janusRTCAdapter.handleOnMessage(msg);
 
-        expect(currentConferenceState.removeAttendee).to.be.calledWith(0);
-        expect(sfu.detach).to.be.called;
+        expect(currentConferenceState.removeAttendee).to.have.been.calledWith(0);
+        expect(feed.destroy).to.have.been.called;
       });
     });
 
@@ -431,13 +429,14 @@ describe('janusAdapter service', function() {
       expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 12345, ptype: 'listener', feed: 0 } });
     });
 
-    it('should call handleOnRemoteStream when onremotestream callback is excuted', function() {
+    it('should call handleOnRemoteStream when onremotestream callback is executed', function() {
       var stream = 'remoteStream';
       var pluginHandle = {};
 
       pluginHandle.send = sinon.spy();
 
       sfu.attach = function(object) {
+        object.success(pluginHandle);
         object.onremotestream(stream);
       };
       currentConferenceState.getVideoElementById = function() {
@@ -455,28 +454,26 @@ describe('janusAdapter service', function() {
       expect(janusAttachMediaStreamMock).to.have.been.calledWith('YoYo', 'remoteStream');
     });
 
-    it('should call handleRemoteOnMessage when on message callback is excuted', function() {
+    it('should call handleOnRemoteMessage when on message callback is excuted', function() {
       var msg = { videoroom: 'attached', publishers: ['P1', 'P2'], id: 7777 };
       var jsep = 'jsSessionEstablishmentProtocol';
       var pluginHandle = {};
-      var feeds = ['P0', 'P1'];
 
       pluginHandle.send = function() { };
       pluginHandle.createAnswer = sinon.spy();
-
       currentConferenceState.pushAttendee = sinon.spy();
 
-      sfu.attach = function(object) {
+      sfu.attach = sinon.spy(function(object) {
         object.success(pluginHandle);
         object.onmessage(msg, jsep);
-      };
+      });
 
       janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.setFeeds(feeds);
       janusRTCAdapter.subscribeToRemoteFeed(id, display);
 
-      expect(pluginHandle.createAnswer).to.be.called;
-      expect(currentConferenceState.pushAttendee).to.be.calledWith(2, 7777, null, display);
+      expect(sfu.attach).to.have.been.called;
+      expect(pluginHandle.createAnswer).to.have.been.called;
+      expect(currentConferenceState.pushAttendee).to.have.been.calledWith(1, id, null, display);
     });
   });
 });

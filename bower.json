@@ -28,6 +28,7 @@
     "chai": "4.1.2",
     "chai-spies": "chaijs/chai-spies#~0.7.0",
     "jquery": "2.1.4",
+    "lodash": "4.17.4",
     "angular-mocks": "1.6.8",
     "angular-ui-router": "1.0.12",
     "dynamic-directive": "2.0.0",
