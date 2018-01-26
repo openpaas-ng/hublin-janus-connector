@@ -10,14 +10,16 @@
     currentConferenceState,
     janusFactory,
     JanusFeed,
+    janusClient,
     janusFeedRegistry,
     session,
     janusConfigurationService,
     LOCAL_VIDEO_ID,
     REMOTE_VIDEO_IDS,
-    JANUS_CONSTANTS
+    JANUS_CONSTANTS,
+    JANUS_FEED_TYPE
   ) {
-    var janus, plugin;
+    var janus;
     var videoEnabled = true;
     // TODO for janus
     var canEnumerateDevices = true;
@@ -40,20 +42,9 @@
 
     return {
       connect: connect,
-      getPlugin: getPlugin,
-      getSfu: getSfu,
-      handleSuccessAttach: handleSuccessAttach,
-      handleError: handleError,
-      handleEventMessage: handleEventMessage,
-      handleJoinedMessage: handleJoinedMessage,
-      handleLocalStream: handleLocalStream,
-      handleOnMessage: handleOnMessage,
+      // PARTIALLY IMPLEMENTED
       leaveRoom: leaveRoom,
-      subscribeToRemoteFeed: subscribeToRemoteFeed,
       isVideoEnabled: isVideoEnabled,
-      publishOwnFeed: publishOwnFeed,
-      setPlugin: setPlugin,
-      setSfu: setSfu,
       myRtcid: myRtcid,
       // NOT IMPLEMENTED (BUT MUST!)
       setVideoEnabled: setVideoEnabled,
@@ -89,98 +80,16 @@
 
     };
 
-    function getPlugin() {
-      return plugin;
-    }
-
-    function setPlugin(_plugin) {
-      plugin = _plugin;
-    }
-
-    function setSfu(_selectiveForwardingUnit) {
-      janus = _selectiveForwardingUnit;
-    }
-
-    function getSfu() {
-      return janus;
-    }
-
-    function handleSuccessAttach(pluginHandle) {
-      setPlugin(pluginHandle);
-
-      pluginHandle.send({
-        message: {
-          request: JANUS_CONSTANTS.exists,
-          room: session.conference.roomId
-        },
-        success: function(janusResponse) {
-          if (!janusResponse || !janusResponse.exists) {
-            $log.info('Creating room: ' + janusResponse.room);
-
-            pluginHandle.send({
-              message: {
-                request: JANUS_CONSTANTS.create,
-                room: janusResponse.room
-              },
-              success: joinRoom
-            });
-          } else {
-            joinRoom(janusResponse);
-          }
-        }
-      });
-
-      function joinRoom(janusResponse) {
-        var username = session.getUsername();
-
-        $log.info('Joining room: ' + janusResponse.room);
-        pluginHandle.send({
-          message: {
-            request: JANUS_CONSTANTS.join,
-            room: janusResponse.room,
-            ptype: JANUS_CONSTANTS.publisher,
-            display: username
-          }
-        });
-      }
-    }
-
-    function handleLocalStream(localStream) {
-      var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
-
-      Janus.attachMediaStream(element, localStream);
-    }
-
     function leaveRoom() {
-      $log.info('leaving a room');
-      plugin.send({
-        message: {
-          request: JANUS_CONSTANTS.unpublish
-        }
-      });
-      $log.info('unpublish request is sent');
-    }
+      var localFeed = janusFeedRegistry.getLocalFeed();
 
-    function publishOwnFeed() {
-      plugin.createOffer({
-        //these boolean variables are default settings, until we implement a dynamic configuration
-        //the user receive and send both audio and video
-        media: { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true },
-        success: function(jsSessionEstablishmentProtocol) {
-          $log.info('Got publisher SDP!');
-          plugin.send({
-            message: {
-              request: JANUS_CONSTANTS.configure,
-              audio: true,
-              video: true
-            },
-            jsep: jsSessionEstablishmentProtocol
-          });
-        },
-        error: function(error) {
-          $log.error('WebRTC error:', error);
-        }
-      });
+      if (!localFeed) {
+        $log.warn('Can not leave room if local feed is not created');
+
+        return;
+      }
+
+      localFeed.leave();
     }
 
     function subscribeToRemoteFeeds(list) {
@@ -192,7 +101,7 @@
     }
 
     function unpublishFeed(msg) {
-      $log.info('Unpublishing feed', msg);
+      $log.info('Unpublishing a remote feed', msg);
       var unpublishedFeed = janusFeedRegistry.get(msg.unpublished);
 
       if (!unpublishedFeed) {
@@ -206,47 +115,6 @@
       janusFeedRegistry.remove(unpublishedFeed.id);
     }
 
-    function handleEventMessage(msg) {
-      if (msg.publishers) {
-        subscribeToRemoteFeeds(msg.publishers);
-      } else if (msg.unpublished) {
-        unpublishFeed(msg);
-      }
-    }
-
-    function handleJoinedMessage(msg) {
-      currentConferenceState.pushAttendee(0, msg.id, session.getUserId(), session.getUsername());
-
-      publishOwnFeed();
-
-      msg.publishers && subscribeToRemoteFeeds(msg.publishers);
-    }
-
-    function handleError(error) {
-      $log.error('Error: ' + error);
-    }
-
-    function handleOnMessage(msg, jsSessionEstablishmentProtocol) {
-      $log.info('Got a message (publisher)');
-      if (msg) {
-        switch (msg.videoroom) {
-          case JANUS_CONSTANTS.joined:
-            handleJoinedMessage(msg);
-            break;
-          case JANUS_CONSTANTS.event:
-            handleEventMessage(msg);
-            break;
-          default:
-            $log.info('Event is not supported', msg.videoroom);
-            break;
-        }
-      }
-
-      if (jsSessionEstablishmentProtocol) {
-        getPlugin().handleRemoteJsep({ jsep: jsSessionEstablishmentProtocol});
-      }
-    }
-
     function setVideoEnabled(enabled) {
       videoEnabled = enabled;
     }
@@ -257,7 +125,7 @@
 
     function subscribeToRemoteFeed(id, display) {
       $log.info('Subscribing to remote feed', id, display);
-      var feed;
+      var remoteFeed;
 
       janus.attach({
         plugin: JANUS_CONSTANTS.videoroom,
@@ -270,8 +138,8 @@
       function handleRemoteSuccess(pluginHandle) {
         $log.info('Attaching a new remote feed with id', id);
 
-        feed = new JanusFeed(pluginHandle, session.conference.roomId, id, display);
-        feed.listen();
+        remoteFeed = new JanusFeed(pluginHandle, session.conference.roomId, id, display, JANUS_FEED_TYPE.remote);
+        remoteFeed.listen();
       }
 
       function handleOnRemoteError(err) {
@@ -279,17 +147,17 @@
       }
 
       function handleOnRemoteStream(stream) {
-        var element = currentConferenceState.getVideoElementById(REMOTE_VIDEO_IDS[feed.rfindex - 1]);
+        var element = currentConferenceState.getVideoElementById(REMOTE_VIDEO_IDS[remoteFeed.rfindex - 1]);
 
         $log.info('Attaching remote stream to element', element);
         Janus.attachMediaStream(element.get(0), stream);
-        feed.setStream(stream);
+        remoteFeed.setStream(stream);
       }
 
       function handleOnRemoteMessage(msg, jsSessionEstablishmentProtocol) {
         $log.info('Handling remote message', msg);
         if (jsSessionEstablishmentProtocol) {
-          feed.subscribe(jsSessionEstablishmentProtocol);
+          remoteFeed.subscribe(jsSessionEstablishmentProtocol);
         }
         if (msg && msg.videoroom === JANUS_CONSTANTS.attached) {
           handleAttachedMessage(msg);
@@ -301,13 +169,23 @@
 
         // TODO: Find a better way to find the right index
         // this is length + 1 until we store the current feed in the registery also.
-        feed.rfindex = feeds.length + 1;
-        currentConferenceState.pushAttendee(feed.rfindex, feed.id, null, display);
-        janusFeedRegistry.add(feed);
+        remoteFeed.rfindex = feeds.length + 1;
+        currentConferenceState.pushAttendee(remoteFeed.rfindex, remoteFeed.id, null, display);
+        janusFeedRegistry.add(remoteFeed);
       }
     }
 
     function connect() {
+      connectToJanus().then(joinConference);
+    }
+
+    function connectToJanus() {
+      var defer = $q.defer();
+
+      if (janus) {
+        return defer.resolve();
+      }
+
       var conference = currentConferenceState.conference;
       var conferenceJanusConfig = janusConfigurationService.getConferenceConfiguration(conference);
 
@@ -315,24 +193,93 @@
         server: conferenceJanusConfig.url,
         iceServers: conference.iceServers,
         success: function() {
-          $log.info('Janus session created, attaching videoroom...');
-          janus.attach({
-            plugin: JANUS_CONSTANTS.videoroom,
-            success: handleSuccessAttach,
-            error: onAttachError,
-            onmessage: handleOnMessage,
-            onlocalstream: handleLocalStream
-          });
+          defer.resolve();
         },
-        error: onJanusInstanceError
+        error: function(err) {
+          $log.error('Error while instanciating Janus', err);
+          defer.reject(err);
+        }
       });
 
-      function onAttachError(err) {
-        $log.error('Error on janus.attach after instanciating Janus', err);
+      return defer.promise;
+    }
+
+    function joinConference() {
+      var localFeed = null;
+
+      $log.info('Attaching videoroom to join conference...');
+      janus.attach({
+        plugin: JANUS_CONSTANTS.videoroom,
+        success: onSuccess,
+        error: onError,
+        onmessage: onMessage,
+        onlocalstream: onLocalStream
+      });
+
+      function onSuccess(pluginHandle) {
+        var id = pluginHandle.id;
+        var display = session.getUsername();
+        var roomId = session.conference.roomId;
+
+        localFeed = new JanusFeed(pluginHandle, session.conference.roomId, id, display, JANUS_FEED_TYPE.local);
+        janusClient(pluginHandle).assertRoomExists(roomId).then(localFeed.join, onError);
       }
 
-      function onJanusInstanceError(err) {
-        $log.error('Error while instanciating Janus', err);
+      function onError(err) {
+        $log.error('Can not attach to videoroom to join conference', err);
+      }
+
+      function onMessage(msg, jsSessionEstablishmentProtocol) {
+        if (msg) {
+          $log.info('Message on room', msg.videoroom);
+          switch (msg.videoroom) {
+            case JANUS_CONSTANTS.joined:
+              // janus confirmed we joined the rooom
+              handleJoinedMessage(msg);
+              break;
+            case JANUS_CONSTANTS.event:
+              handleEventMessage(msg);
+              break;
+            default:
+              $log.info('Event is not supported', msg.videoroom);
+              break;
+          }
+        }
+
+        if (jsSessionEstablishmentProtocol) {
+          localFeed.handleRemoteJsep(jsSessionEstablishmentProtocol);
+        }
+      }
+
+      function handleJoinedMessage(msg) {
+        // TODO: handle publish error and do not push attendee if we are not ready to...
+        localFeed.publish();
+        currentConferenceState.pushAttendee(0, msg.id, session.getUserId(), session.getUsername());
+        janusFeedRegistry.setLocalFeed(localFeed);
+
+        msg.publishers && subscribeToRemoteFeeds(msg.publishers);
+      }
+
+      function handleEventMessage(msg) {
+        $log.debug('Message on room', msg);
+        if (msg.publishers) {
+          subscribeToRemoteFeeds(msg.publishers);
+        } else if (msg.unpublished) {
+          unpublishFeed(msg);
+        } else if (msg.leaving) {
+          $log.info('leaving (not implemented)', msg.leaving);
+        } else if (msg.configured) {
+          $log.info('configured (not implemented)', msg.leaving);
+        } else if (msg.error) {
+          $log.error('Janus server sends back an error', msg.error);
+        }
+      }
+
+      function onLocalStream(localStream) {
+        var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
+
+        localFeed.setStream(localStream);
+        Janus.attachMediaStream(element, localStream);
       }
     }
 
@@ -358,7 +305,9 @@
     }
 
     function myRtcid() {
-      return getPlugin() && getPlugin().getId();
+      var localFeed = janusFeedRegistry.getLocalFeed();
+
+      return localFeed && localFeed.id;
     }
 
     function performCall(otherRTCid) {

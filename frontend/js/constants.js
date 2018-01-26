@@ -2,6 +2,10 @@
   'use strict';
 
   angular.module('hublin.janus.connector')
+    .constant('JANUS_FEED_TYPE', {
+      remote: 'remote',
+      local: 'local'
+    })
     .constant('JANUS_MODULE_NAME', 'hublin.janus.connector')
     .constant('JANUS_CONSTANTS', {
       janusPort: 8088,

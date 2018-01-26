@@ -30,6 +30,7 @@ const janusConnector = new AwesomeModule(MODULE_NAME, {
         'feed-registry.service.js',
         'feed.service.js',
         'janus-adapter.service.js',
+        'janus-client.service.js',
         'janus-factory.service.js',
         'janus-configuration.service.js'
       ];

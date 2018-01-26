@@ -5,11 +5,14 @@
 
   function janusFeedRegistry(_, $log) {
     var feeds = {};
+    var localFeed;
 
     return {
       add: add,
       get: get,
       getAll: getAll,
+      getLocalFeed: getLocalFeed,
+      setLocalFeed: setLocalFeed,
       remove: remove
     };
 
@@ -26,8 +29,17 @@
       return _.values(feeds);
     }
 
+    function getLocalFeed() {
+      return localFeed;
+    }
+
+    function setLocalFeed(feed) {
+      localFeed = feed;
+    }
+
     function remove(id) {
       delete feeds[id];
     }
+
   }
 })(angular);

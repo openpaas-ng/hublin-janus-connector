@@ -4,10 +4,10 @@
 
 var expect = chai.expect;
 
-describe('janusAdapter service', function() {
-  var currentConferenceState, attachSpy, janusFeedRegistry, janusOptions, janusInitMock, janusAttachMediaStreamMock,
-    JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, plugin,
-    session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config, $log;
+describe('The janusAdapter service', function() {
+  var currentConferenceState, $rootScope, localFeed, attachSpy, janusFeedRegistry, janusOptions, janusInitMock, janusAttachMediaStreamMock,
+    JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, $q,
+    session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config;
 
   LOCAL_VIDEO_ID = 'video-thumb0';
   REMOTE_VIDEO_IDS = ['video-thumb#1', 'video-thumb#2', 'video-thumb#3'];
@@ -39,12 +39,10 @@ describe('janusAdapter service', function() {
     }
   };
 
-  plugin = {
-    createOffer: function() { },
-    getId: sinon.stub()
-  };
-
   beforeEach(function() {
+    localFeed = {
+      id: 'localfeedid'
+    };
     janusInitMock = sinon.spy();
     janusAttachMediaStreamMock = sinon.spy();
     JanusListDevicesMock = sinon.spy();
@@ -69,10 +67,11 @@ describe('janusAdapter service', function() {
       $provide.value('REMOTE_VIDEO_IDS', REMOTE_VIDEO_IDS);
     });
 
-    angular.mock.inject(function(_janusRTCAdapter_, _$log_, _janusFeedRegistry_) {
+    angular.mock.inject(function(_$q_, _$rootScope_, _janusRTCAdapter_, _janusFeedRegistry_) {
+      $rootScope = _$rootScope_;
       janusRTCAdapter = _janusRTCAdapter_;
       janusFeedRegistry = _janusFeedRegistry_;
-      $log = _$log_;
+      $q = _$q_;
     });
 
   });
@@ -83,17 +82,13 @@ describe('janusAdapter service', function() {
     });
 
     it('should return the right id', function() {
-      var userId = 123456789;
+      janusFeedRegistry.setLocalFeed(localFeed);
 
-      plugin.getId.returns(userId);
-      janusRTCAdapter.setPlugin(plugin);
-
-      expect(janusRTCAdapter.myRtcid()).to.equal(userId);
-      expect(plugin.getId).to.have.been.calledOnce;
+      expect(janusRTCAdapter.myRtcid()).to.equal(localFeed.id);
     });
   });
 
-  describe('The connect method', function() {
+  describe('The connect function', function() {
     it('should instanciate a new janus client instance', function() {
       var servers = ['foo', 'bar'];
 
@@ -104,6 +99,7 @@ describe('janusAdapter service', function() {
       };
 
       janusRTCAdapter.connect();
+      $rootScope.$digest();
 
       expect(janusInitMock).to.have.been.called;
       expect(janusOptions.server).to.equal(config.url);
@@ -120,6 +116,7 @@ describe('janusAdapter service', function() {
 
       janusRTCAdapter.connect();
       janusOptions.success();
+      $rootScope.$digest();
 
       expect(attachSpy).to.have.been.calledWith({
         plugin: 'janus.plugin.videoroom',
@@ -137,344 +134,209 @@ describe('janusAdapter service', function() {
     });
   });
 
-  describe('handleSuccessAttach method', function() {
-    var pluginHandle = {};
-    var createRequestSpy, existsRequestSpy, joinRequestSpy;
-    var response = {
-      exists: false
-    };
-
-    beforeEach(function() {
-      createRequestSpy = sinon.spy();
-      existsRequestSpy = sinon.spy();
-      joinRequestSpy = sinon.spy();
-
-      pluginHandle.send = function(request) {
-        switch (request.message.request) {
-          case 'create': createRequestSpy(request);
-            break;
-          case 'exists': existsRequestSpy(request);
-            break;
-          case 'join': joinRequestSpy(request);
-            break;
-        }
-        if (request.success) {
-          response.room = request && request.message && request.message.room;
-          request.success(response);
-        }
-      };
-    });
-
-    it('should check if room exists', function() {
-      response.exists = true;
-
-      janusRTCAdapter.handleSuccessAttach(pluginHandle);
-
-      expect(janusRTCAdapter.getPlugin()).to.be.equal(pluginHandle);
-      expect(existsRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'exists', room: 12345 }}));
-      expect(createRequestSpy).to.not.have.been.called;
-      expect(joinRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'join', room: 12345, ptype: 'publisher', display: 'Woot' } }));
-    });
-
-    it('should send message', function() {
-      response.exists = false;
-
-      janusRTCAdapter.handleSuccessAttach(pluginHandle);
-
-      expect(janusRTCAdapter.getPlugin()).to.be.equal(pluginHandle);
-      expect(existsRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'exists', room: 12345 }}));
-      expect(createRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'create', room: 12345 }}));
-      expect(joinRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'join', room: 12345, ptype: 'publisher', display: 'Woot' } }));
-    });
-
-  });
-
-  describe('The handle error method', function() {
-    it('should log error', function() {
-      var logSpy = sinon.spy($log, 'error');
-
-      janusRTCAdapter.handleError('error');
-
-      expect(logSpy).to.have.been.calledWith(sinon.match(/Error/));
-    });
-  });
-
-  describe('The handleJoinedMessage method', function() {
-    it('should handle message with event type == joined', function() {
-      var msg = { id: 'LoL' };
-
-      plugin.createOffer = sinon.spy();
-      currentConferenceState.pushAttendee = sinon.spy();
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleJoinedMessage(msg);
-
-      expect(plugin.createOffer).to.be.called;
-      expect(currentConferenceState.pushAttendee).to.have.been.calledWith(0, 'LoL', '0000', 'Woot');
-    });
-  });
-
-  describe('The handleLocalStream method', function() {
-    it('should call Janus attachMediaStream', function() {
-      var stream = 'stream';
-      var spy;
-
-      janusFactory.get = function() {
-        Janus.attachMediaStream = sinon.spy();
-
-        return Janus;
+  describe('The joinConference function', function() {
+    describe('The onSuccess callback', function() {
+      var pluginHandle = {};
+      var createRequestSpy, existsRequestSpy, joinRequestSpy;
+      var response = {
+        exists: false
       };
 
-      currentConferenceState.getVideoElementById = function() {
-        var element = {
-          get: function() {
-            return 'YoYo';
+      beforeEach(function() {
+        createRequestSpy = sinon.stub().returns($q.when());
+        existsRequestSpy = sinon.stub().returns($q.when());
+        joinRequestSpy = sinon.spy();
+
+        pluginHandle.send = function(request) {
+          switch (request.message.request) {
+            case 'create': createRequestSpy(request);
+              break;
+            case 'exists': existsRequestSpy(request);
+              break;
+            case 'join': joinRequestSpy(request);
+              break;
+          }
+          if (request.success) {
+            response.room = request && request.message && request.message.room;
+            request.success(response);
           }
         };
+      });
 
-        return element;
-      };
+      it('should check if room exists', function() {
+        response.exists = true;
+        janusRTCAdapter.connect();
+        janusOptions.success();
+        $rootScope.$digest();
+        attachSpy.firstCall.args[0].success(pluginHandle);
+        $rootScope.$digest();
 
-      spy = sinon.spy(currentConferenceState, 'getVideoElementById');
-      janusRTCAdapter.handleLocalStream(stream);
-
-      expect(spy).to.have.been.calledWith(LOCAL_VIDEO_ID);
-      expect(Janus.attachMediaStream).to.have.been.calledWith('YoYo', 'stream');
-    });
-  });
-
-  describe('The handleOnMessage method', function() {
-    beforeEach(function() {
-      currentConferenceState.pushAttendee = sinon.spy();
-      currentConferenceState.removeAttendee = sinon.spy();
+        expect(existsRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'exists', room: 12345 }}));
+        expect(createRequestSpy).to.not.have.been.called;
+      });
     });
 
-    describe('should call handleJoined Message if msg.videoroom is joined', function() {
+    describe.skip('The onmessage callback', function() {
+      var pluginHandle;
+
+      beforeEach(function() {
+        pluginHandle = {
+          send: sinon.spy(),
+          createOffer: sinon.spy()
+        };
+        currentConferenceState.pushAttendee = sinon.spy();
+        currentConferenceState.removeAttendee = sinon.spy();
+      });
+
+      describe('when msg.videoroom === event', function() {
+        it('should call attach in subscribeToRemoteFeed as many times as msg.publishers length', function() {
+          var msg = { videoroom: 'event', publishers: ['P1', 'P2'] };
+          var jsSessionEstablishmentProtocol = null;
+
+          janusRTCAdapter.connect();
+          janusOptions.success();
+          $rootScope.$digest();
+
+          attachSpy.firstCall.args[0].success(pluginHandle);
+          attachSpy.firstCall.args[0].onmessage(msg, jsSessionEstablishmentProtocol);
+
+          expect(sfu.attach).to.be.calledTwice;
+        });
+
+        it('should call unpublishFeed if event is unpublished', function() {
+          var id = '0000';
+          var msg = { videoroom: 'event', unpublished: id };
+          var feed = { id: id, rfindex: 0, destroy: sinon.spy()};
+
+          janusFeedRegistry.add(feed);
+          janusRTCAdapter.setSfu(sfu);
+          janusRTCAdapter.handleOnMessage(msg);
+
+          expect(currentConferenceState.removeAttendee).to.have.been.calledWith(0);
+          expect(feed.destroy).to.have.been.called;
+        });
+      });
+
+      describe('when msg.videoroom === joined', function() {
+        it('should handle local feed resources', function() {
+          var msg = { id: 'LoL', videoroom: 'joined'};
+
+          currentConferenceState.pushAttendee = sinon.spy();
+          janusRTCAdapter.connect();
+          janusOptions.success();
+          $rootScope.$digest();
+
+          attachSpy.firstCall.args[0].success(pluginHandle);
+          attachSpy.firstCall.args[0].onmessage(msg);
+
+          expect(pluginHandle.createOffer).to.have.been.called;
+          expect(currentConferenceState.pushAttendee).to.have.been.calledWith(0, 'LoL', '0000', 'Woot');
+        });
+      });
+
       it('should publish own feeds and attach remotefeeds', function() {
         var msg = { videoroom: 'joined', publishers: ['P1', 'P2'] };
         var jsSessionEstablishmentProtocol = null;
 
-        plugin.createOffer = sinon.spy();
+        pluginHandle.createOffer = sinon.spy();
 
-        janusRTCAdapter.setSfu(sfu);
-        janusRTCAdapter.setPlugin(plugin);
-        janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
+        janusRTCAdapter.connect();
+        janusOptions.success();
+        $rootScope.$digest();
 
-        expect(currentConferenceState.pushAttendee).to.be.calledOnce;
-        expect(sfu.attach).to.be.calledTwice;
+        attachSpy.firstCall.args[0].success(pluginHandle);
+        attachSpy.firstCall.args[0].onmessage(msg, jsSessionEstablishmentProtocol);
+
+        expect(currentConferenceState.pushAttendee).to.have.been.calledOnce;
+        expect(attachSpy).to.have.been.calledWith(sinon.match({onremotestream: sinon.match.func}));
       });
-    });
 
-    it('should NOT call handleJoined Message if msg.videoroom is not joined', function() {
-      var msg = null;
-      var jsSessionEstablishmentProtocol = null;
-
-      janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
-
-      expect(currentConferenceState.pushAttendee).not.to.be.called;
-      expect(sfu.attach).not.to.be.called;
-    });
-
-    describe('should call handleEvent Message if msg.videoroom is event', function() {
-      it('should call attach in subscribeToRemoteFeed as many times as msg.publishers length', function() {
-        var msg = { videoroom: 'event', publishers: ['P1', 'P2'] };
+      it('should NOT call handleJoined Message if msg.videoroom is not joined', function() {
+        var msg = null;
         var jsSessionEstablishmentProtocol = null;
 
-        janusRTCAdapter.setSfu(sfu);
-        janusRTCAdapter.setPlugin(plugin);
-        janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
+        janusRTCAdapter.connect();
+        janusOptions.success();
+        $rootScope.$digest();
 
-        expect(sfu.attach).to.be.calledTwice;
+        attachSpy.firstCall.args[0].success(pluginHandle);
+        attachSpy.firstCall.args[0].onmessage(msg, jsSessionEstablishmentProtocol);
+
+        expect(currentConferenceState.pushAttendee).not.to.be.called;
       });
 
-      it('should call unpublishFeed if event is unpublished', function() {
-        var id = '0000';
-        var msg = { videoroom: 'event', unpublished: id };
-        var feed = { id: id, rfindex: 0, destroy: sinon.spy()};
+      it('should call handleRemoteJsep when jsSessionEstablishmentProtocol is defined and not null', function() {
+        var msg = null;
+        var jsSessionEstablishmentProtocol = {};
 
-        janusFeedRegistry.add(feed);
-        janusRTCAdapter.setSfu(sfu);
-        janusRTCAdapter.handleOnMessage(msg);
+        pluginHandle.handleRemoteJsep = sinon.spy();
+        janusRTCAdapter.connect();
+        janusOptions.success();
+        $rootScope.$digest();
 
-        expect(currentConferenceState.removeAttendee).to.have.been.calledWith(0);
-        expect(feed.destroy).to.have.been.called;
+        attachSpy.firstCall.args[0].success(pluginHandle);
+        attachSpy.firstCall.args[0].onmessage(msg, jsSessionEstablishmentProtocol);
+
+        expect(pluginHandle.handleRemoteJsep).to.have.been.calledWith({ jsep: jsSessionEstablishmentProtocol });
+      });
+
+      it('should  Not call handleRemoteJsep when jsSessionEstablishmentProtocol is undefined or null', function() {
+        var msg = null;
+        var jsSessionEstablishmentProtocol = null;
+
+        pluginHandle.handleRemoteJsep = sinon.spy();
+        janusRTCAdapter.connect();
+        janusOptions.success();
+        $rootScope.$digest();
+
+        attachSpy.firstCall.args[0].success(pluginHandle);
+        attachSpy.firstCall.args[0].onmessage(msg, jsSessionEstablishmentProtocol);
+
+        expect(pluginHandle.handleRemoteJsep).not.to.be.called;
       });
     });
 
-    it('should call handleRemoteJsep when jsSessionEstablishmentProtocol is defined and not null', function() {
-      var msg = null;
-      var jsSessionEstablishmentProtocol = {};
+    describe('The onlocalstream callback', function() {
+      var pluginHandle;
 
-      plugin.handleRemoteJsep = sinon.spy();
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
+      beforeEach(function() {
+        pluginHandle = {
+          send: sinon.spy(),
+          createOffer: sinon.spy()
+        };
+      });
 
-      expect(plugin.handleRemoteJsep).to.have.been.calledWith({ jsep: jsSessionEstablishmentProtocol });
-    });
+      it('should call Janus attachMediaStream', function() {
+        var stream = 'stream';
+        var spy;
 
-    it('should  Not call handleRemoteJsep when jsSessionEstablishmentProtocol is undefined or null', function() {
-      var msg = null;
-      var jsSessionEstablishmentProtocol = null;
+        janusFactory.get = function() {
+          Janus.attachMediaStream = sinon.spy();
 
-      plugin.handleRemoteJsep = sinon.spy();
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.handleOnMessage(msg, jsSessionEstablishmentProtocol);
-
-      expect(plugin.handleRemoteJsep).not.to.be.called;
-    });
-  });
-
-  describe('publishOwnFeed method', function() {
-    it('should call Offer with Media object ,success & error callbacks', function() {
-
-      plugin.createOffer = function(object) {
-        var msg = { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true };
-
-        expect(object.media).to.deep.equal(msg);
-        expect(object.success).to.be.a('function');
-        expect(object.error).to.be.a('function');
-      };
-
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.publishOwnFeed();
-    });
-
-    it('should send an object when it gets pulisher SDP', function() {
-      var jsep = 'jsSessionEstablishmentProtocol';
-
-      plugin.createOffer = function(object) {
-        object.success(jsep);
-      };
-      plugin.send = sinon.spy();
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.publishOwnFeed();
-
-      expect(plugin.send).to.have.been.calledWith({ message: { request: 'configure', audio: true, video: true }, jsep: 'jsSessionEstablishmentProtocol' });
-    });
-
-    it('should throw error when it does not get publisher SDP ', function() {
-      var logErrorSpy = sinon.spy($log, 'error');
-
-      plugin.createOffer = function(object) {
-        object.error();
-      };
-
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.publishOwnFeed();
-
-      expect(logErrorSpy).to.have.been.calledWith(sinon.match(/WebRTC error/));
-    });
-  });
-
-  describe('video enabling and disabling', function() {
-    it('should return true', function() {
-      expect(janusRTCAdapter.isVideoEnabled()).to.be.true;
-    });
-
-    it('should return false', function() {
-      janusRTCAdapter.setVideoEnabled(false);
-      expect(janusRTCAdapter.isVideoEnabled()).to.be.false;
-    });
-  });
-
-  describe('The leaveRoom method', function() {
-    it('should send unpublish request', function() {
-      plugin.send = sinon.spy();
-
-      janusRTCAdapter.setPlugin(plugin);
-      janusRTCAdapter.leaveRoom();
-
-      expect(plugin.send).to.be.calledWith({ message: { request: 'unpublish' } });
-    });
-  });
-
-  describe('The subscribeToRemoteFeeds method', function() {
-    var id, display, Janus;
-
-    beforeEach(function() {
-      id = 0;
-      display = 'Woot';
-      Janus = {};
-      janusFactory.get = function() {
-        Janus.attachMediaStream = sinon.spy();
-        Janus.debug = function() { };
-
-        return Janus;
-      };
-    });
-    it('should attach remote feeds', function() {
-      sfu.attach = function(object) {
-        expect(object.plugin).to.be.equal('janus.plugin.videoroom');
-        expect(object.success).to.be.a('function');
-        expect(object.error).to.be.a('function');
-        expect(object.onremotestream).to.be.a('function');
-        expect(object.onmessage).to.be.a('function');
-      };
-
-      janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.subscribeToRemoteFeed(id, display);
-    });
-
-    it('should call handleRemoteSuccessAttach when success callback is excuted', function() {
-      var pluginHandle = {};
-
-      pluginHandle.send = sinon.spy();
-      sfu.attach = function(object) {
-        object.success(pluginHandle);
-      };
-      janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.subscribeToRemoteFeed(id, display);
-
-      expect(pluginHandle.send).to.have.been.calledWith({ message: { request: 'join', room: 12345, ptype: 'listener', feed: 0 } });
-    });
-
-    it('should call handleOnRemoteStream when onremotestream callback is executed', function() {
-      var stream = 'remoteStream';
-      var pluginHandle = {};
-
-      pluginHandle.send = sinon.spy();
-
-      sfu.attach = function(object) {
-        object.success(pluginHandle);
-        object.onremotestream(stream);
-      };
-      currentConferenceState.getVideoElementById = function() {
-        var element = {
-          get: function() {
-            return 'YoYo';
-          }
+          return Janus;
         };
 
-        return element;
-      };
-      janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.subscribeToRemoteFeed(id, display);
+        currentConferenceState.getVideoElementById = function() {
+          var element = {
+            get: function() {
+              return 'YoYo';
+            }
+          };
 
-      expect(janusAttachMediaStreamMock).to.have.been.calledWith('YoYo', 'remoteStream');
-    });
+          return element;
+        };
 
-    it('should call handleOnRemoteMessage when on message callback is excuted', function() {
-      var msg = { videoroom: 'attached', publishers: ['P1', 'P2'], id: 7777 };
-      var jsep = 'jsSessionEstablishmentProtocol';
-      var pluginHandle = {};
+        spy = sinon.spy(currentConferenceState, 'getVideoElementById');
+        janusRTCAdapter.connect();
+        janusOptions.success();
+        $rootScope.$digest();
 
-      pluginHandle.send = function() { };
-      pluginHandle.createAnswer = sinon.spy();
-      currentConferenceState.pushAttendee = sinon.spy();
+        attachSpy.firstCall.args[0].success(pluginHandle);
+        attachSpy.firstCall.args[0].onlocalstream(stream);
 
-      sfu.attach = sinon.spy(function(object) {
-        object.success(pluginHandle);
-        object.onmessage(msg, jsep);
+        expect(spy).to.have.been.calledWith(LOCAL_VIDEO_ID);
+        expect(Janus.attachMediaStream).to.have.been.calledWith('YoYo', 'stream');
       });
-
-      janusRTCAdapter.setSfu(sfu);
-      janusRTCAdapter.subscribeToRemoteFeed(id, display);
-
-      expect(sfu.attach).to.have.been.called;
-      expect(pluginHandle.createAnswer).to.have.been.called;
-      expect(currentConferenceState.pushAttendee).to.have.been.calledWith(1, id, null, display);
     });
   });
 });
-
