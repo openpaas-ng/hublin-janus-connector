@@ -17,7 +17,7 @@
       if (!configuration) {
         return {
           type: 'janus',
-          url: $window.location.protocol + '//' + $window.location.hostname + ':' + JANUS_CONSTANTS.janusPort + '/janus'
+          url: $window.location.protocol + '//' + $window.location.hostname + ':' + ($window.location.protocol === 'https:' ? JANUS_CONSTANTS.janusHttpsPort : JANUS_CONSTANTS.janusPort) + '/janus'
         };
       }
 

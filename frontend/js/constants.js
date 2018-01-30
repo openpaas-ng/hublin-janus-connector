@@ -9,6 +9,7 @@
     .constant('JANUS_MODULE_NAME', 'hublin.janus.connector')
     .constant('JANUS_CONSTANTS', {
       janusPort: 8088,
+      janusHttpsPort: 8089,
       create: 'create',
       join: 'join',
       exists: 'exists',
