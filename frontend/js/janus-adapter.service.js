@@ -314,8 +314,10 @@
       $log.warn('performCall is not implement in Janus connector', otherRTCid);
     }
 
-    function enableMicrophone(muted) {
-      $log.warn('enableMicrophone is not implement in Janus connector', muted);
+    function enableMicrophone(enabled) {
+      var localFeed = janusFeedRegistry.getLocalFeed();
+
+      localFeed.toggleMicrophone(enabled);
     }
 
     function muteRemoteMicrophone(rtcId, mute) {

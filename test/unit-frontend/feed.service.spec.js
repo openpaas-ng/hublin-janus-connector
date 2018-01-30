@@ -13,7 +13,9 @@ describe('The JanusFeed factory', function() {
       send: sinon.spy(),
       detach: sinon.spy(),
       createOffer: sinon.spy(),
-      createAnswer: sinon.spy()
+      createAnswer: sinon.spy(),
+      muteAudio: sinon.spy(),
+      unmuteAudio: sinon.spy()
     };
     roomId = 34000;
     id = 'the user id';
@@ -132,6 +134,22 @@ describe('The JanusFeed factory', function() {
       feed.destroy();
 
       expect(pluginHandle.detach).to.have.been.calledOnce;
+    });
+  });
+
+  describe('The toggleMicrophone function', function() {
+    it('should mute audio when microphone is disable', function() {
+      feed.toggleMicrophone(false);
+
+      expect(pluginHandle.muteAudio).to.have.been.calledOnce;
+      expect(pluginHandle.unmuteAudio).to.not.have.been.called;
+    });
+
+    it('should unmute audio when microphone is enabled', function() {
+      feed.toggleMicrophone(true);
+
+      expect(pluginHandle.unmuteAudio).to.have.been.calledOnce;
+      expect(pluginHandle.muteAudio).to.not.have.been.called;
     });
   });
 
