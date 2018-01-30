@@ -15,7 +15,9 @@ describe('The JanusFeed factory', function() {
       createOffer: sinon.spy(),
       createAnswer: sinon.spy(),
       muteAudio: sinon.spy(),
-      unmuteAudio: sinon.spy()
+      unmuteAudio: sinon.spy(),
+      muteVideo: sinon.spy(),
+      unmuteVideo: sinon.spy()
     };
     roomId = 34000;
     id = 'the user id';
@@ -150,6 +152,22 @@ describe('The JanusFeed factory', function() {
 
       expect(pluginHandle.unmuteAudio).to.have.been.calledOnce;
       expect(pluginHandle.muteAudio).to.not.have.been.called;
+    });
+  });
+
+  describe('The toggleVideo function', function() {
+    it('should mute video when Video is disable', function() {
+      feed.toggleVideo(false);
+
+      expect(pluginHandle.muteVideo).to.have.been.calledOnce;
+      expect(pluginHandle.unmuteVideo).to.not.have.been.called;
+    });
+
+    it('should unmute video when Video is enabled', function() {
+      feed.toggleVideo(true);
+
+      expect(pluginHandle.unmuteVideo).to.have.been.calledOnce;
+      expect(pluginHandle.muteVideo).to.not.have.been.called;
     });
   });
 

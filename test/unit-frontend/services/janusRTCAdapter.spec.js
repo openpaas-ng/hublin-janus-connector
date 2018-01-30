@@ -156,6 +156,28 @@ describe('The janusAdapter service', function() {
     });
   });
 
+  describe('The toggleVideo function', function() {
+    var localFeed = {};
+
+    beforeEach(function() {
+      localFeed.toggleVideo = sinon.spy();
+
+      janusFeedRegistry.setLocalFeed(localFeed);
+    });
+
+    it('should call localFeed enableMicrophone when disabling microphone', function() {
+      janusRTCAdapter.enableVideo(false);
+
+      expect(localFeed.toggleVideo).to.have.been.calledWith(false);
+    });
+
+    it('should call localFeed enableMicrophone when enabling microphone', function() {
+      janusRTCAdapter.enableVideo(true);
+
+      expect(localFeed.toggleVideo).to.have.been.calledWith(true);
+    });
+  });
+
   describe('The joinConference function', function() {
     describe('The onSuccess callback', function() {
       var pluginHandle = {};

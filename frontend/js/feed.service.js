@@ -27,6 +27,10 @@
         enabled ? pluginHandle.unmuteAudio() : pluginHandle.muteAudio();
       };
 
+      this.toggleVideo = function(enabled) {
+        enabled ? pluginHandle.unmuteVideo() : pluginHandle.muteVideo();
+      };
+
       this.publish = function() {
         var defer = $q.defer();
 
