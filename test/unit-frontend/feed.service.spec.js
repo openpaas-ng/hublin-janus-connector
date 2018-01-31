@@ -52,7 +52,7 @@ describe('The JanusFeed factory', function() {
 
   describe('The publish function', function() {
     it('should create offer correctly', function() {
-      feed.publish();
+      feed.publish({});
 
       expect(pluginHandle.createOffer).to.have.been.calledWith({
         // this will change when we will implement options
@@ -64,7 +64,7 @@ describe('The JanusFeed factory', function() {
 
     describe('The success callback', function() {
       it('should call janus correctly and resolve', function(done) {
-        var promise = feed.publish();
+        var promise = feed.publish({});
 
         expect(pluginHandle.createOffer).to.have.been.called;
 
@@ -76,7 +76,9 @@ describe('The JanusFeed factory', function() {
               audio: true,
               video: true
             },
-            jsep: jsSessionEstablishmentProtocol
+            jsep: jsSessionEstablishmentProtocol,
+            success: sinon.match.func,
+            error: sinon.match.func
           });
           done();
         })
@@ -87,7 +89,7 @@ describe('The JanusFeed factory', function() {
 
     describe('The error callback', function() {
       it('should reject', function(done) {
-        var promise = feed.publish();
+        var promise = feed.publish({});
 
         expect(pluginHandle.createOffer).to.have.been.called;
 

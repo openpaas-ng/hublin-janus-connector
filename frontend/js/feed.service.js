@@ -3,7 +3,7 @@
 
   angular.module('hublin.janus.connector').factory('JanusFeed', JanusFeed);
 
-  function JanusFeed($q, $log, JANUS_CONSTANTS) {
+  function JanusFeed($q, $log, JanusFeedConfiguration, JANUS_CONSTANTS) {
     return function(pluginHandle, roomId, id, displayName, type) {
       this.pluginHandle = pluginHandle;
       this.roomId = roomId;
@@ -31,22 +31,29 @@
         enabled ? pluginHandle.unmuteVideo() : pluginHandle.muteVideo();
       };
 
-      this.publish = function() {
+      this.publish = function(options) {
         var defer = $q.defer();
 
+        //these boolean variables are default settings, until we implement a dynamic configuration
+        //the user receive and send both audio and video
+        var configuration = { audio: true, video: true };
+        var media = { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true };
+
+        if (options.bitrate) {
+          configuration.bitrate = options.bitrate;
+        }
+
         pluginHandle.createOffer({
-          //these boolean variables are default settings, until we implement a dynamic configuration
-          //the user receive and send both audio and video
-          media: { audioRecv: true, videoRecv: true, audioSend: true, videoSend: true },
+          media: media,
           success: function(jsSessionEstablishmentProtocol) {
-            pluginHandle.send({
-              message: {
-                request: JANUS_CONSTANTS.configure,
-                audio: true,
-                video: true
-              },
-              jsep: jsSessionEstablishmentProtocol
-            });
+            this.config = new JanusFeedConfiguration(pluginHandle, jsSessionEstablishmentProtocol);
+            this.config.configure(configuration)
+              .then(function() {
+                $log.debug('Configured with', configuration);
+              })
+              .catch(function(err) {
+                $log.warn('Configuration failed', err);
+              });
             defer.resolve();
           },
           error: function(error) {
