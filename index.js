@@ -32,6 +32,7 @@ const janusConnector = new AwesomeModule(MODULE_NAME, {
         'janus-adapter.service.js',
         'janus-client.service.js',
         'janus-factory.service.js',
+        'janus-joinleave-notification.service.js',
         'janus-configuration.service.js'
       ];
 
