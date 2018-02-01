@@ -175,8 +175,14 @@
       }
     }
 
-    function connect() {
-      connectToJanus().then(joinConference);
+    function connect(conferenceState, callback) {
+      connectToJanus()
+        .then(joinConference)
+        .then(function() {
+          $log.debug('Janus conference has been joined');
+          callback();
+        })
+        .catch(callback);
     }
 
     function connectToJanus() {
@@ -205,6 +211,7 @@
     }
 
     function joinConference() {
+      var defer = $q.defer();
       var localFeed = null;
 
       $log.info('Attaching videoroom to join conference...');
@@ -227,6 +234,7 @@
 
       function onError(err) {
         $log.error('Can not attach to videoroom to join conference', err);
+        defer.reject(err);
       }
 
       function onMessage(msg, jsSessionEstablishmentProtocol) {
