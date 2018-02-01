@@ -23,6 +23,10 @@
         });
       };
 
+      this.toggleMicrophone = function(enabled) {
+        enabled ? pluginHandle.unmuteAudio() : pluginHandle.muteAudio();
+      };
+
       this.publish = function() {
         var defer = $q.defer();
 
