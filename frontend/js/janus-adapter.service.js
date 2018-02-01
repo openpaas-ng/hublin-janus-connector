@@ -17,8 +17,11 @@
     LOCAL_VIDEO_ID,
     REMOTE_VIDEO_IDS,
     JANUS_CONSTANTS,
-    JANUS_FEED_TYPE
+    JANUS_FEED_TYPE,
+    JANUS_BITRATES,
+    RTC_DEFAULT_BITRATE
   ) {
+    var bitrate = JANUS_BITRATES[RTC_DEFAULT_BITRATE];
     var janus;
     var videoEnabled = true;
     // TODO for janus
@@ -42,6 +45,7 @@
 
     return {
       connect: connect,
+      configureBandwidth: configureBandwidth,
       // PARTIALLY IMPLEMENTED
       leaveRoom: leaveRoom,
       isVideoEnabled: isVideoEnabled,
@@ -49,7 +53,6 @@
       // NOT IMPLEMENTED (BUT MUST!)
       setVideoEnabled: setVideoEnabled,
       setGotMedia: setGotMedia,
-      configureBandwidth: configureBandwidth,
       enableVideo: enableVideo,
       addDisconnectCallback: addDisconnectCallback,
       removeDisconnectCallback: removeDisconnectCallback,
@@ -261,7 +264,10 @@
 
       function handleJoinedMessage(msg) {
         // TODO: handle publish error and do not push attendee if we are not ready to...
-        localFeed.publish();
+        localFeed.publish({
+          // TODO: Set other settings (videoOn, audioOn)
+          bitrate: bitrate
+        });
         currentConferenceState.pushAttendee(0, msg.id, session.getUserId(), session.getUsername());
         janusFeedRegistry.setLocalFeed(localFeed);
 
@@ -296,8 +302,9 @@
       callback();
     }
 
-    function configureBandwidth(bitRates) {
-      $log.warn('configureBandwidth is not implemented in Janus connector', bitRates);
+    function configureBandwidth(rate) {
+      bitrate = JANUS_BITRATES[rate];
+      $log.debug('Bitrate is set to', rate, ':', bitrate);
     }
 
     function enableVideo(enabled) {

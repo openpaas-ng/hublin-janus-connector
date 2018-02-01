@@ -6,6 +6,11 @@
       remote: 'remote',
       local: 'local'
     })
+    .constant('JANUS_BITRATES', {
+      low: 64000,
+      medium: 128000,
+      nolimit: 0
+    })
     .constant('JANUS_MODULE_NAME', 'hublin.janus.connector')
     .constant('JANUS_CONSTANTS', {
       janusPort: 8088,
