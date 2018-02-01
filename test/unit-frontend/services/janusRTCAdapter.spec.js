@@ -5,7 +5,7 @@
 var expect = chai.expect;
 
 describe('The janusAdapter service', function() {
-  var currentConferenceState, $rootScope, localFeed, attachSpy, janusFeedRegistry, janusOptions, janusInitMock, janusAttachMediaStreamMock,
+  var currentConferenceState, error, $rootScope, localFeed, attachSpy, janusFeedRegistry, janusOptions, janusInitMock, janusAttachMediaStreamMock,
     JanusListDevicesMock, janusRTCAdapter, janusFactory, Janus, $q,
     session, sfu, LOCAL_VIDEO_ID, REMOTE_VIDEO_IDS, config;
 
@@ -40,6 +40,7 @@ describe('The janusAdapter service', function() {
   };
 
   beforeEach(function() {
+    error = new Error('💣');
     localFeed = {
       id: 'localfeedid'
     };
@@ -114,7 +115,7 @@ describe('The janusAdapter service', function() {
         url: 'http://localhost:8088/janus'
       };
 
-      janusRTCAdapter.connect();
+      janusRTCAdapter.connect(null, function() {});
       janusOptions.success();
       $rootScope.$digest();
 
@@ -125,6 +126,28 @@ describe('The janusAdapter service', function() {
         onmessage: sinon.match.func,
         onlocalstream: sinon.match.func
       });
+    });
+
+    it('should call the callback with error connect to janus fails', function() {
+      var spy = sinon.spy();
+
+      config = {
+        type: 'janus',
+        url: 'http://localhost:8088/janus'
+      };
+
+      janusRTCAdapter.connect(null, spy);
+      janusOptions.error(error);
+      $rootScope.$digest();
+
+      expect(attachSpy).to.have.been.calledWith({
+        plugin: 'janus.plugin.videoroom',
+        success: sinon.match.func,
+        error: sinon.match.func,
+        onmessage: sinon.match.func,
+        onlocalstream: sinon.match.func
+      });
+      expect(spy).to.have.been.calledWith(error);
     });
 
     it('should use the default config if the conference do not have janus config', function() {
@@ -164,8 +187,10 @@ describe('The janusAdapter service', function() {
       });
 
       it('should check if room exists', function() {
+        var spy = sinon.spy();
+
         response.exists = true;
-        janusRTCAdapter.connect();
+        janusRTCAdapter.connect(null, spy);
         janusOptions.success();
         $rootScope.$digest();
         attachSpy.firstCall.args[0].success(pluginHandle);
@@ -173,6 +198,7 @@ describe('The janusAdapter service', function() {
 
         expect(existsRequestSpy).to.have.been.calledWith(sinon.match({ message: { request: 'exists', room: 12345 }}));
         expect(createRequestSpy).to.not.have.been.called;
+        expect(spy).to.have.been.calledOnce;
       });
     });
 
@@ -327,7 +353,7 @@ describe('The janusAdapter service', function() {
         };
 
         spy = sinon.spy(currentConferenceState, 'getVideoElementById');
-        janusRTCAdapter.connect();
+        janusRTCAdapter.connect(null, function() {});
         janusOptions.success();
         $rootScope.$digest();
 
