@@ -292,8 +292,10 @@
       $log.warn('configureBandwidth is not implemented in Janus connector', bitRates);
     }
 
-    function enableVideo(videoChoice) {
-      $log.warn('enableVideo is not implemented in Janus connector', videoChoice);
+    function enableVideo(enabled) {
+      var localFeed = janusFeedRegistry.getLocalFeed();
+
+      localFeed.toggleVideo(enabled);
     }
 
     function addDisconnectCallback() {
