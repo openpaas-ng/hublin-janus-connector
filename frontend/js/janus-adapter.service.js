@@ -9,6 +9,7 @@
     $log,
     currentConferenceState,
     janusFactory,
+    JanusDataChannel,
     JanusFeed,
     janusClient,
     janusFeedRegistry,
@@ -23,6 +24,7 @@
   ) {
     var bitrate = JANUS_BITRATES[RTC_DEFAULT_BITRATE];
     var janus;
+    var dataChannel;
     var videoEnabled = true;
     // TODO for janus
     var canEnumerateDevices = true;
@@ -216,6 +218,8 @@
     function joinConference() {
       var defer = $q.defer();
       var localFeed = null;
+      var display = session.getUsername();
+      var roomId = session.conference.roomId;
 
       $log.info('Attaching videoroom to join conference...');
       janus.attach({
@@ -223,14 +227,16 @@
         success: onSuccess,
         error: onError,
         onmessage: onMessage,
-        onlocalstream: onLocalStream
+        onlocalstream: onLocalStream,
+        webrtcState: function(on) {
+          $log.info('WebRTC PeerConnection is ' + (on ? 'up' : 'down') + ' now');
+        }
       });
 
       function onSuccess(pluginHandle) {
         var id = pluginHandle.id;
-        var display = session.getUsername();
-        var roomId = session.conference.roomId;
 
+        dataChannel = new JanusDataChannel(janus, display, roomId, id);
         localFeed = new JanusFeed(pluginHandle, session.conference.roomId, id, display, JANUS_FEED_TYPE.local);
         janusClient(pluginHandle).assertRoomExists(roomId).then(localFeed.join, onError);
       }
@@ -319,8 +325,8 @@
       $log.warn('addDisconnectCallback is not implement in Janus connector');
     }
 
-    function sendData(easyrtcid, msgType, data, ackhandler) {
-      $log.warn('sendData is not implement in Janus connector', easyrtcid, msgType, data, ackhandler);
+    function sendData(remoteFeedId, msgType, data, callback) {
+      dataChannel.sendData(msgType, data, remoteFeedId).then(callback);
     }
 
     function myRtcid() {
@@ -353,6 +359,7 @@
 
     function broadcastData(msgType, data) {
       $log.warn('broadcastData is not implement in Janus connector', msgType, data);
+      //sendData(undefined, msgType, data);
     }
 
     function broadcastMe() {
