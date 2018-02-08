@@ -3,7 +3,7 @@
 
   angular.module('hublin.janus.connector').factory('JanusFeed', JanusFeed);
 
-  function JanusFeed($q, $log, JanusFeedConfiguration, JANUS_CONSTANTS) {
+  function JanusFeed($q, $log, JanusFeedConfiguration, currentConferenceState, JANUS_CONSTANTS) {
     return function(pluginHandle, roomId, id, displayName, type) {
       this.pluginHandle = pluginHandle;
       this.roomId = roomId;
@@ -122,6 +122,21 @@
         $log.info('Setting stream for janus feed', id);
 
         this.stream = stream;
+      };
+
+      this.getStatus = function() {
+        var attendee = currentConferenceState.getAttendeeByRtcid(id);
+
+        return {
+          id: attendee.id,
+          feedId: attendee.rtcid,
+          displayName: attendee.displayName,
+          avatar: attendee.avatar,
+          mute: attendee.mute || false,
+          muteVideo: attendee.muteVideo || false,
+          speaking: attendee.speaking || false,
+          timezoneOffset: attendee.timezoneOffset || false
+        };
       };
     };
   }

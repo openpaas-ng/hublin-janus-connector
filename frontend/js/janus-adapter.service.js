@@ -274,7 +274,8 @@
           // TODO: Set other settings (videoOn, audioOn)
           bitrate: bitrate
         });
-        currentConferenceState.pushAttendee(0, msg.id, session.getUserId(), session.getUsername());
+
+        currentConferenceState.pushAttendee(0, localFeed.id, session.getUserId(), session.getUsername());
         janusFeedRegistry.setLocalFeed(localFeed);
 
         msg.publishers && subscribeToRemoteFeeds(msg.publishers);
@@ -363,7 +364,14 @@
     }
 
     function broadcastMe() {
-      $log.warn('broadcastMe is not implement in Janus connector');
+      var localFeed = janusFeedRegistry.getLocalFeed();
+      var data = {
+        source: localFeed.id,
+        status: localFeed.getStatus()
+      };
+
+      $log.debug('DataChannel broadcastMe', data);
+      broadcastData(JANUS_CONSTANTS.message, data);
     }
 
     function removeDisconnectCallback(id) {
