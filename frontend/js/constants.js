@@ -13,20 +13,24 @@
     })
     .constant('JANUS_MODULE_NAME', 'hublin.janus.connector')
     .constant('JANUS_CONSTANTS', {
+      ack: 'ack',
+      attached: 'attached',
+      configure: 'configure',
+      create: 'create',
+      event: 'event',
+      exists: 'exists',
       janusPort: 8088,
       janusHttpsPort: 8089,
-      create: 'create',
       join: 'join',
-      exists: 'exists',
-      publisher: 'publisher',
-      listener: 'listener',
-      serverAddress: 'http://localhost:8088/janus',
-      videoroom: 'janus.plugin.videoroom',
-      configure: 'configure',
       joined: 'joined',
-      attached: 'attached',
-      event: 'event',
+      listener: 'listener',
+      message: 'message',
+      publisher: 'publisher',
+      textroom: 'janus.plugin.textroom',
+      serverAddress: 'http://localhost:8088/janus',
+      setup: 'setup',
+      start: 'start',
       unpublish: 'unpublish',
-      start: 'start'
+      videoroom: 'janus.plugin.videoroom'
     });
 })(angular);

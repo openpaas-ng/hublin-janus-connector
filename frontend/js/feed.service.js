@@ -13,6 +13,7 @@
 
       this.listen = function() {
         $log.info('Listening to janus feed', id, 'on room', roomId);
+
         pluginHandle.send({
           message: {
             request: JANUS_CONSTANTS.join,
@@ -89,22 +90,19 @@
         pluginHandle.detach();
       };
 
-      this.sendData = function() {
-
-      };
-
       this.subscribe = function(jsep) {
         $log.info('Subscribe to janus feed', id, 'on room', roomId);
         var defer = $q.defer();
 
         pluginHandle.createAnswer({
-          media: {video: true, audio: true},
+          media: { video: true, audio: true },
           jsep: jsep,
           success: function(jsep) {
             pluginHandle.send({
               message: { request: JANUS_CONSTANTS.start, room: roomId },
               jsep: jsep
             });
+
             defer.resolve();
           },
           error: function(err) {
