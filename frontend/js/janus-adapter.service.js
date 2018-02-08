@@ -358,8 +358,8 @@
     }
 
     function broadcastData(msgType, data) {
-      $log.warn('broadcastData is not implement in Janus connector', msgType, data);
-      //sendData(undefined, msgType, data);
+      $log.debug('DataChannel broadcastData', msgType, data);
+      dataChannel.sendData(msgType, data);
     }
 
     function broadcastMe() {
