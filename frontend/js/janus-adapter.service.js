@@ -310,7 +310,9 @@
     function enableVideo(enabled) {
       var localFeed = janusFeedRegistry.getLocalFeed();
 
-      localFeed.toggleVideo(enabled);
+      if (localFeed) {
+        localFeed.toggleVideo(enabled);
+      }
     }
 
     function addDisconnectCallback() {
