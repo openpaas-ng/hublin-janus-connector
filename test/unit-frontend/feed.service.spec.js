@@ -5,7 +5,7 @@
 var expect = chai.expect;
 
 describe('The JanusFeed factory', function() {
-  var $rootScope, JanusFeed, feed, error, pluginHandle, roomId, id, displayName, type, jsSessionEstablishmentProtocol;
+  var $rootScope, JanusFeed, feed, error, pluginHandle, roomId, id, displayName, currentConferenceState, type, jsSessionEstablishmentProtocol;
 
   beforeEach(function() {
     error = new Error('meow, I failed 😿');
@@ -24,8 +24,11 @@ describe('The JanusFeed factory', function() {
     displayName = 'James Bond';
     type = 'local';
     jsSessionEstablishmentProtocol = 'This is some WEBRTC level stuff';
+    currentConferenceState = {};
 
-    angular.mock.module('hublin.janus.connector', function() {});
+    angular.mock.module('hublin.janus.connector', function($provide) {
+      $provide.value('currentConferenceState', currentConferenceState);
+    });
 
     angular.mock.inject(function(_$rootScope_, _JanusFeed_) {
       $rootScope = _$rootScope_;

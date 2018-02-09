@@ -124,7 +124,8 @@ describe('The janusAdapter service', function() {
         success: sinon.match.func,
         error: sinon.match.func,
         onmessage: sinon.match.func,
-        onlocalstream: sinon.match.func
+        onlocalstream: sinon.match.func,
+        webrtcState: sinon.match.func
       });
     });
 
@@ -145,7 +146,8 @@ describe('The janusAdapter service', function() {
         success: sinon.match.func,
         error: sinon.match.func,
         onmessage: sinon.match.func,
-        onlocalstream: sinon.match.func
+        onlocalstream: sinon.match.func,
+        webrtcState: sinon.match.func
       });
       expect(spy).to.have.been.calledWith(error);
     });

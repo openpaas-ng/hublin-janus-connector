@@ -3,7 +3,7 @@
 
   angular.module('hublin.janus.connector').factory('JanusFeed', JanusFeed);
 
-  function JanusFeed($q, $log, JanusFeedConfiguration, JANUS_CONSTANTS) {
+  function JanusFeed($q, $log, JanusFeedConfiguration, currentConferenceState, JANUS_CONSTANTS) {
     return function(pluginHandle, roomId, id, displayName, type) {
       this.pluginHandle = pluginHandle;
       this.roomId = roomId;
@@ -13,6 +13,7 @@
 
       this.listen = function() {
         $log.info('Listening to janus feed', id, 'on room', roomId);
+
         pluginHandle.send({
           message: {
             request: JANUS_CONSTANTS.join,
@@ -89,22 +90,19 @@
         pluginHandle.detach();
       };
 
-      this.sendData = function() {
-
-      };
-
       this.subscribe = function(jsep) {
         $log.info('Subscribe to janus feed', id, 'on room', roomId);
         var defer = $q.defer();
 
         pluginHandle.createAnswer({
-          media: {video: true, audio: true},
+          media: { video: true, audio: true },
           jsep: jsep,
           success: function(jsep) {
             pluginHandle.send({
               message: { request: JANUS_CONSTANTS.start, room: roomId },
               jsep: jsep
             });
+
             defer.resolve();
           },
           error: function(err) {
@@ -124,6 +122,21 @@
         $log.info('Setting stream for janus feed', id);
 
         this.stream = stream;
+      };
+
+      this.getStatus = function() {
+        var attendee = currentConferenceState.getAttendeeByRtcid(id);
+
+        return {
+          id: attendee.id,
+          feedId: attendee.rtcid,
+          displayName: attendee.displayName,
+          avatar: attendee.avatar,
+          mute: attendee.mute || false,
+          muteVideo: attendee.muteVideo || false,
+          speaking: attendee.speaking || false,
+          timezoneOffset: attendee.timezoneOffset || false
+        };
       };
     };
   }

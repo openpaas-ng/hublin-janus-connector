@@ -28,6 +28,7 @@ const janusConnector = new AwesomeModule(MODULE_NAME, {
         'constants.js',
         'run.js',
         'feed-configuration.service.js',
+        'data-channel.service.js',
         'feed-registry.service.js',
         'feed.service.js',
         'janus-adapter.service.js',
