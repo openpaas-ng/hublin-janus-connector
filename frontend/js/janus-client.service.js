@@ -24,7 +24,8 @@
         pluginHandle.send({
           message: {
             request: JANUS_CONSTANTS.create,
-            room: roomId
+            room: roomId,
+            publishers: JANUS_CONSTANTS.max_publishers
           },
           success: function() {
             defer.resolve();

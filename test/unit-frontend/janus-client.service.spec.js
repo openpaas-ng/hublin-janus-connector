@@ -5,7 +5,7 @@
 var expect = chai.expect;
 
 describe('The janusClient factory', function() {
-  var $rootScope, janusClient, error, pluginHandle, roomId;
+  var $rootScope, janusClient, error, pluginHandle, roomId, JANUS_CONSTANTS;
 
   beforeEach(function() {
     error = new Error('meow, I failed 😿');
@@ -16,9 +16,10 @@ describe('The janusClient factory', function() {
 
     angular.mock.module('hublin.janus.connector', function() {});
 
-    angular.mock.inject(function(_$rootScope_, _janusClient_) {
+    angular.mock.inject(function(_$rootScope_, _janusClient_, _JANUS_CONSTANTS_) {
       $rootScope = _$rootScope_;
       janusClient = _janusClient_;
+      JANUS_CONSTANTS = _JANUS_CONSTANTS_;
     });
   });
 
@@ -28,7 +29,7 @@ describe('The janusClient factory', function() {
 
       expect(pluginHandle.send).to.have.been.calledWith({
         message: {
-          request: 'exists',
+          request: JANUS_CONSTANTS.exists,
           room: roomId
         },
         success: sinon.match.func,
@@ -95,8 +96,9 @@ describe('The janusClient factory', function() {
 
       expect(pluginHandle.send).to.have.been.calledWith({
         message: {
-          request: 'create',
-          room: roomId
+          request: JANUS_CONSTANTS.create,
+          room: roomId,
+          publishers: JANUS_CONSTANTS.max_publishers
         },
         success: sinon.match.func,
         error: sinon.match.func

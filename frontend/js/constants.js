@@ -24,6 +24,7 @@
       join: 'join',
       joined: 'joined',
       listener: 'listener',
+      max_publishers: 10,
       message: 'message',
       publisher: 'publisher',
       textroom: 'janus.plugin.textroom',
