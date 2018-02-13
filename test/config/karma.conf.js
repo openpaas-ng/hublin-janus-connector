@@ -1,6 +1,8 @@
 'use strict';
 
 module.exports = function(config) {
+  var singleRun = process.env.SINGLE_RUN ? process.env.SINGLE_RUN !== 'false' : true;
+
   config.set({
     basePath: '../../',
     files: [
@@ -25,15 +27,21 @@ module.exports = function(config) {
     ],
     frameworks: ['mocha'],
     colors: true,
-    singleRun: true,
+    singleRun: singleRun,
     autoWatch: true,
-    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari'],
-    reporters: ['coverage', 'spec'],
+    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari', 'ChromeWithDebugging'],
+    customLaunchers: {
+      ChromeWithDebugging: {
+        base: 'Chrome',
+        flags: ['--remote-debugging-port=9222'],
+        debug: true
+      }
+    },
+    reporters: singleRun ? ['coverage', 'spec'] : ['spec'],
     preprocessors: {
       'frontend/js/**/*.js': ['coverage'],
       '**/*.jade': ['ng-jade2module']
     },
-
     plugins: [
       'karma-phantomjs-launcher',
       'karma-chrome-launcher',
@@ -44,9 +52,7 @@ module.exports = function(config) {
       'karma-spec-reporter',
       '@linagora/karma-ng-jade2module-preprocessor'
     ],
-
     coverageReporter: {type: 'text', dir: '/tmp'},
-
     ngJade2ModulePreprocessor: {
       stripPrefix: 'frontend',
       // setting this option will create only a single module that contains templates
@@ -58,6 +64,5 @@ module.exports = function(config) {
       },
       moduleName: 'jadeTemplates'
     }
-
   });
 };
