@@ -391,7 +391,7 @@ describe('The janusAdapter service', function() {
         currentConferenceState.getVideoElementById = function() {
           var element = {
             get: function() {
-              return 'YoYo';
+              return { muted: false };
             }
           };
 
@@ -407,7 +407,7 @@ describe('The janusAdapter service', function() {
         attachSpy.firstCall.args[0].onlocalstream(stream);
 
         expect(spy).to.have.been.calledWith(LOCAL_VIDEO_ID);
-        expect(Janus.attachMediaStream).to.have.been.calledWith('YoYo', 'stream');
+        expect(Janus.attachMediaStream).to.have.been.calledWith({ muted: true }, 'stream');
       });
     });
   });

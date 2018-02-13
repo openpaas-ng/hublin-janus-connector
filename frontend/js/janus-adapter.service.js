@@ -299,6 +299,9 @@
       function onLocalStream(localStream) {
         var element = currentConferenceState.getVideoElementById(LOCAL_VIDEO_ID).get(0);
 
+        //Need to mute local stream to avoid audio echo
+        element.muted = true;
+
         localFeed.setStream(localStream);
         Janus.attachMediaStream(element, localStream);
       }
