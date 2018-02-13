@@ -18,6 +18,7 @@ module.exports = function(config) {
       'frontend/components/angular-mocks/angular-mocks.js',
       'frontend/components/dynamic-directive/dist/dynamic-directive.min.js',
       'test/config/mocks/*.js',
+      'test/fixtures/**/*.js',
       'frontend/js/**/*.js',
       'test/unit-frontend/**/*.js',
       'frontend/views/**/*.jade'
@@ -29,12 +30,16 @@ module.exports = function(config) {
     colors: true,
     singleRun: singleRun,
     autoWatch: true,
-    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari', 'ChromeWithDebugging'],
+    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari', 'ChromeWithDebugging', 'ChromeHeadlessNoSandbox'],
     customLaunchers: {
       ChromeWithDebugging: {
         base: 'Chrome',
         flags: ['--remote-debugging-port=9222'],
         debug: true
+      },
+      ChromeHeadlessNoSandbox: {
+        base: 'Chrome',
+        flags: ['--remote-debugging-port=9222', '--no-sandbox', '--headless', '--disable-gpu']
       }
     },
     reporters: singleRun ? ['coverage', 'spec'] : ['spec'],

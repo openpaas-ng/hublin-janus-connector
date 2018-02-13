@@ -1,4 +1,7 @@
-image: linagora/node-test-base:6
+image:  linagora/node-test-base:8-with-chrome
+
+services:
+  - linagora/janus-gateway:latest
 
 stages:
   - test
@@ -8,7 +11,7 @@ test:
   tags:
     - docker
   script:
-   - npm install
-   - npm prune
-   - bower i --allow-root
-   - grunt --chunk=1
+    - npm install
+    - npm prune
+    - bower i --allow-root
+    - grunt --chunk=1
