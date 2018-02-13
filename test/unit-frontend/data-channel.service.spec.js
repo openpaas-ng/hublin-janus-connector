@@ -40,7 +40,7 @@ describe('The JanusDataChannel factory', function() {
       configuration: {
         hosts: [{
           type: 'janus',
-          url: 'http://localhost:8088/janus'
+          url: `http://${window.TEST_ENV_CONSTANT.JANUS_URL}:8088/janus`
       }]
       }
     });

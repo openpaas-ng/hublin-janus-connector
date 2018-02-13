@@ -27,6 +27,12 @@ module.exports = function(config) {
       'frontend/js/run.js'
     ],
     frameworks: ['mocha'],
+    client: {
+      JANUS_TEST_URL: process.env.JANUS_TEST_URL || 'localhost',
+      mocha: {
+        require: [require.resolve('./client-env-constants')]
+      }
+    },
     colors: true,
     singleRun: singleRun,
     autoWatch: true,

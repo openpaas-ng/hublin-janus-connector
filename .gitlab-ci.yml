@@ -10,6 +10,8 @@ test:
   stage: test
   tags:
     - docker
+  variables:
+    JANUS_TEST_URL: linagora__janus-gateway
   script:
     - npm install
     - npm prune
