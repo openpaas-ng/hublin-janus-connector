@@ -3,4 +3,5 @@ test/frontend/karma-include/*
 frontend/components/*
 tmp/
 test/conf/**
+test/fixtures/**
 frontend/js/thirdparty/**
