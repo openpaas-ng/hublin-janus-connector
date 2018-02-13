@@ -350,7 +350,9 @@
     }
 
     function muteRemoteMicrophone(rtcId, mute) {
-      $log.warn('muteRemoteMicrophone is not implement in Janus connector', rtcId, mute);
+      var feed = janusFeedRegistry.get(rtcId);
+
+      feed.toggleRemoteAudio(!mute);
     }
 
     function enableCamera(videoMuted) {
