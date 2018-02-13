@@ -45,7 +45,7 @@
             room: roomId
           },
           success: function(janusResponse) {
-            defer.resolve(janusResponse && janusResponse.exists);
+            defer.resolve(janusResponse && !!janusResponse.exists);
           },
           error: defer.reject
         });
