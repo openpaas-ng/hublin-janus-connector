@@ -5,6 +5,7 @@ services:
 
 stages:
   - test
+  - deploy_test
 
 test:
   stage: test
@@ -17,3 +18,21 @@ test:
     - npm prune
     - bower i --allow-root
     - grunt --chunk=1
+
+deploy_test:
+  stage: deploy_test
+  except:
+    - triggers
+  tags:
+    - janus.hubl.in
+    - deployment
+  environment:
+    name: dev
+    url: https://janus.hubl.in
+  only:
+    - master@linagora/lgs/openpaas/${CI_PROJECT_NAME}
+  script:
+    - cd /srv/hublin
+    - npm update --production
+    - git checkout -- .
+    - sudo /etc/init.d/hublin.test restart
