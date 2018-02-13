@@ -1,6 +1,8 @@
 'use strict';
 
 module.exports = function(config) {
+  var singleRun = process.env.SINGLE_RUN ? process.env.SINGLE_RUN !== 'false' : true;
+
   config.set({
     basePath: '../../',
     files: [
@@ -16,6 +18,7 @@ module.exports = function(config) {
       'frontend/components/angular-mocks/angular-mocks.js',
       'frontend/components/dynamic-directive/dist/dynamic-directive.min.js',
       'test/config/mocks/*.js',
+      'test/fixtures/**/*.js',
       'frontend/js/**/*.js',
       'test/unit-frontend/**/*.js',
       'frontend/views/**/*.jade'
@@ -24,16 +27,32 @@ module.exports = function(config) {
       'frontend/js/run.js'
     ],
     frameworks: ['mocha'],
+    client: {
+      JANUS_TEST_URL: process.env.JANUS_TEST_URL || 'localhost',
+      mocha: {
+        require: [require.resolve('./client-env-constants')]
+      }
+    },
     colors: true,
-    singleRun: true,
+    singleRun: singleRun,
     autoWatch: true,
-    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari'],
-    reporters: ['coverage', 'spec'],
+    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari', 'ChromeWithDebugging', 'ChromeHeadlessNoSandbox'],
+    customLaunchers: {
+      ChromeWithDebugging: {
+        base: 'Chrome',
+        flags: ['--remote-debugging-port=9222'],
+        debug: true
+      },
+      ChromeHeadlessNoSandbox: {
+        base: 'Chrome',
+        flags: ['--remote-debugging-port=9222', '--no-sandbox', '--headless', '--disable-gpu']
+      }
+    },
+    reporters: singleRun ? ['coverage', 'spec'] : ['spec'],
     preprocessors: {
       'frontend/js/**/*.js': ['coverage'],
       '**/*.jade': ['ng-jade2module']
     },
-
     plugins: [
       'karma-phantomjs-launcher',
       'karma-chrome-launcher',
@@ -44,9 +63,7 @@ module.exports = function(config) {
       'karma-spec-reporter',
       '@linagora/karma-ng-jade2module-preprocessor'
     ],
-
     coverageReporter: {type: 'text', dir: '/tmp'},
-
     ngJade2ModulePreprocessor: {
       stripPrefix: 'frontend',
       // setting this option will create only a single module that contains templates
@@ -58,6 +75,5 @@ module.exports = function(config) {
       },
       moduleName: 'jadeTemplates'
     }
-
   });
 };

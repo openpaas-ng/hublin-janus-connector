@@ -43,7 +43,7 @@ describe('The janusClient factory', function() {
 
       pluginHandle.send.firstCall.args[0].success({ exists: exists});
       promise.then(function(result) {
-        expect(result).to.be.truethy;
+        expect(result).to.be.true;
         done();
       })
       .catch(done);
@@ -55,7 +55,7 @@ describe('The janusClient factory', function() {
 
       pluginHandle.send.firstCall.args[0].success();
       promise.then(function(result) {
-        expect(result).to.be.falsy;
+        expect(result).to.be.undefined;
         done();
       })
       .catch(done);
@@ -68,7 +68,7 @@ describe('The janusClient factory', function() {
 
       pluginHandle.send.firstCall.args[0].success({ exists: exists});
       promise.then(function(result) {
-        expect(result).to.be.falsy;
+        expect(result).to.be.false;
         done();
       })
       .catch(done);

@@ -50,7 +50,7 @@ module.exports = function(grunt) {
     karma: {
       unit: {
         configFile: './test/config/karma.conf.js',
-        browsers: ['PhantomJS']
+        browsers: ['ChromeHeadlessNoSandbox']
       }
     }
   });

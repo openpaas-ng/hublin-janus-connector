@@ -78,8 +78,8 @@ describe('The janusAdapter service', function() {
   });
 
   describe('The myRtcid function', function() {
-    it('should return falsy when plugin is not defined', function() {
-      expect(janusRTCAdapter.myRtcid()).to.be.falsy;
+    it('should return undefined when plugin is not defined', function() {
+      expect(janusRTCAdapter.myRtcid()).to.be.undefined;
     });
 
     it('should return the right id', function() {
