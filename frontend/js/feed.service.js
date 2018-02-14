@@ -28,6 +28,18 @@
         enabled ? pluginHandle.unmuteAudio() : pluginHandle.muteAudio();
       };
 
+      this.toggleRemoteAudio = function(enabled) {
+        if (this.stream && this.stream.getAudioTracks) {
+          var tracks = this.stream.getAudioTracks();
+
+          if (tracks) {
+            tracks.forEach(function(track) {
+              track.enabled = enabled;
+            });
+          }
+        }
+      };
+
       this.toggleVideo = function(enabled) {
         enabled ? pluginHandle.unmuteVideo() : pluginHandle.muteVideo();
       };

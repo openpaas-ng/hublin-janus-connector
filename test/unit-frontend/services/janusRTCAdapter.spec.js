@@ -203,6 +203,30 @@ describe('The janusAdapter service', function() {
     });
   });
 
+  describe('The muteRemoteMicrophone function', function() {
+    var feed = {
+      id: 1
+    };
+
+    beforeEach(function() {
+      feed.toggleRemoteAudio = sinon.spy();
+
+      janusFeedRegistry.add(feed);
+    });
+
+    it('should call localFeed toggleRemoteAudio when disabling remote audio', function() {
+      janusRTCAdapter.muteRemoteMicrophone(feed.id, false);
+
+      expect(feed.toggleRemoteAudio).to.have.been.calledWith(true);
+    });
+
+    it('should call localFeed toggleRemoteAudio when enabling remote audio', function() {
+      janusRTCAdapter.muteRemoteMicrophone(feed.id, true);
+
+      expect(feed.toggleRemoteAudio).to.have.been.calledWith(false);
+    });
+  });
+
   describe('The joinConference function', function() {
     describe('The onSuccess callback', function() {
       var pluginHandle = {};

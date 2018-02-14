@@ -160,6 +160,42 @@ describe('The JanusFeed factory', function() {
     });
   });
 
+  describe('The toggleRemoteAudio function', function() {
+    var stream, audioTracks;
+
+    beforeEach(function() {
+      audioTracks = [
+        { enabled: false },
+        { enabled: false }
+      ];
+      stream = {
+        getAudioTracks: function() {
+          return audioTracks;
+        }
+      };
+    });
+
+    it('should disable audio when microphone is disabled', function() {
+      feed.setStream(stream);
+      feed.toggleRemoteAudio(false);
+
+      expect(stream.getAudioTracks()).to.deep.equal([
+        { enabled: false },
+        { enabled: false }
+      ]);
+    });
+
+    it('should enable audio when microphone is enabled', function() {
+      feed.setStream(stream);
+      feed.toggleRemoteAudio(true);
+
+      expect(stream.getAudioTracks()).to.deep.equal([
+        { enabled: true },
+        { enabled: true }
+      ]);
+    });
+  });
+
   describe('The toggleVideo function', function() {
     it('should mute video when Video is disable', function() {
       feed.toggleVideo(false);
