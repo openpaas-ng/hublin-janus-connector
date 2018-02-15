@@ -48,9 +48,13 @@ module.exports = function(grunt) {
       }
     },
     karma: {
-      unit: {
+      'unit-chrome': {
         configFile: './test/config/karma.conf.js',
         browsers: ['ChromeHeadlessNoSandbox']
+      },
+      'unit-firefox': {
+        configFile: './test/config/karma.conf.js',
+        browsers: ['FirefoxHeadlessNoSandbox']
       }
     }
   });
@@ -62,7 +66,9 @@ module.exports = function(grunt) {
 
   grunt.registerTask('linters', 'Check code for lint', ['eslint:all', 'lint_pattern']);
   grunt.registerTask('test-unit-backend', 'Test backend code', ['mochacli:backend']);
-  grunt.registerTask('test-unit-frontend', 'Test frontend code', ['karma:unit']);
+  grunt.registerTask('test-unit-frontend-chrome', 'Test frontend code with chrome', ['karma:unit-chrome']);
+  grunt.registerTask('test-unit-frontend-firefox', 'Test frontend code with firefox', ['karma:unit-firefox']);
+  grunt.registerTask('test-unit-frontend', 'Test frontend code', ['test-unit-frontend-chrome', 'test-unit-frontend-firefox']);
   grunt.registerTask('test', ['linters', 'test-unit-frontend', 'test-unit-backend']);
   grunt.registerTask('default', ['test']);
 };

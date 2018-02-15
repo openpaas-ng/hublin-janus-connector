@@ -1,4 +1,4 @@
-image:  linagora/node-test-base:8-with-chrome
+image:  linagora/node-test-base:8-with-browsers
 
 services:
   - linagora/janus-gateway:latest
@@ -7,17 +7,35 @@ stages:
   - test
   - deploy_test
 
-test:
+before_script:
+  - npm install --prune
+  - bower install --allow-root
+  - grunt linters
+
+test:frontend:chrome:
   stage: test
   tags:
     - docker
   variables:
     JANUS_TEST_URL: linagora__janus-gateway
   script:
-    - npm install
-    - npm prune
-    - bower i --allow-root
-    - grunt --chunk=1
+    - grunt --chunk=1 test-unit-frontend-chrome
+
+test:frontend:firefox:
+  stage: test
+  tags:
+    - docker
+  variables:
+    JANUS_TEST_URL: linagora__janus-gateway
+  script:
+    - grunt --chunk=1 test-unit-frontend-firefox
+
+test:backend:
+  stage: test
+  tags:
+    - docker
+  script:
+    - grunt --chunk=1 test-unit-backend
 
 deploy_test:
   stage: deploy_test
@@ -30,9 +48,9 @@ deploy_test:
     name: dev
     url: https://janus.hubl.in
   only:
-    - master@linagora/lgs/openpaas/${CI_PROJECT_NAME}
+    - master@linagora/lgs/openpaas/hublin-janus-connector
   script:
     - cd /srv/hublin
-    - npm update --production
+    - npm update
     - git checkout -- .
     - sudo /etc/init.d/hublin.test restart
