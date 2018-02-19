@@ -36,7 +36,7 @@ module.exports = function(config) {
     colors: true,
     singleRun: singleRun,
     autoWatch: true,
-    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari', 'ChromeWithDebugging', 'ChromeHeadlessNoSandbox'],
+    browsers: ['PhantomJS', 'Chrome', 'Firefox', 'safari', 'ChromeWithDebugging', 'ChromeHeadlessNoSandbox', 'FirefoxHeadlessNoSandbox'],
     customLaunchers: {
       ChromeWithDebugging: {
         base: 'Chrome',
@@ -46,6 +46,10 @@ module.exports = function(config) {
       ChromeHeadlessNoSandbox: {
         base: 'Chrome',
         flags: ['--remote-debugging-port=9222', '--no-sandbox', '--headless', '--disable-gpu']
+      },
+      FirefoxHeadlessNoSandbox: {
+        base: 'Firefox',
+        flags: ['--headless']
       }
     },
     reporters: singleRun ? ['coverage', 'spec'] : ['spec'],
