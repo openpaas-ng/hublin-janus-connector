@@ -26,6 +26,7 @@
     var janus;
     var dataChannel;
     var videoEnabled = true;
+    var myRtcidPromise = $q.defer();
     // TODO for janus
     var canEnumerateDevices = true;
     var NOT_CONNECTED = 0;
@@ -82,7 +83,6 @@
       removePeerListener: removePeerListener,
       connection: connection,
       getOpenedDataChannels: getOpenedDataChannels
-
     };
 
     function leaveRoom() {
@@ -243,6 +243,7 @@
 
       function onError(err) {
         $log.error('Can not attach to videoroom to join conference', err);
+        myRtcidPromise.reject(err);
         defer.reject(err);
       }
 
@@ -277,6 +278,7 @@
 
         currentConferenceState.pushAttendee(0, localFeed.id, session.getUserId(), session.getUsername());
         janusFeedRegistry.setLocalFeed(localFeed);
+        myRtcidPromise.resolve(localFeed.id);
 
         msg.publishers && subscribeToRemoteFeeds(msg.publishers);
       }
@@ -334,9 +336,7 @@
     }
 
     function myRtcid() {
-      var localFeed = janusFeedRegistry.getLocalFeed();
-
-      return localFeed && localFeed.id;
+      return myRtcidPromise.promise;
     }
 
     function performCall(otherRTCid) {
