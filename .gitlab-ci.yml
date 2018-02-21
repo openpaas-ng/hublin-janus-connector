@@ -4,13 +4,23 @@ services:
   - linagora/janus-gateway:latest
 
 stages:
+  - prepare
   - test
   - deploy_test
 
-before_script:
-  - npm install --prune
-  - bower install --allow-root
-  - grunt linters
+prepare:
+  stage: prepare
+  tags:
+    - docker
+  script:
+    - rm -rf node_modules/ frontend/components/
+    - npm install --prune
+    - bower install --allow-root
+    - grunt linters
+  artifacts:
+    paths:
+      - node_modules/
+      - frontend/components/
 
 test:frontend:chrome:
   stage: test
