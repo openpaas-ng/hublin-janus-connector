@@ -15,6 +15,7 @@
       get: get,
       getFeedMapping: getFeedMapping,
       getAll: getAll,
+      getAllIds: getAllIds,
       getLocalFeed: getLocalFeed,
       setLocalFeed: setLocalFeed,
       remove: remove,
@@ -55,6 +56,10 @@
 
     function getAll() {
       return _.values(feeds);
+    }
+
+    function getAllIds() {
+      return _.keys(feeds);
     }
 
     function getLocalFeed() {

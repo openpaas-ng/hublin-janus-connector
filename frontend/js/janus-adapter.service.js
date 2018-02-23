@@ -53,7 +53,8 @@
     return {
       connect: connect,
       configureBandwidth: configureBandwidth,
-      getRemoteStream: getRemoteStream,      
+      getRemoteStream: getRemoteStream,
+      getRemoteRtcIds: getRemoteRtcIds,
       // PARTIALLY IMPLEMENTED
       leaveRoom: leaveRoom,
       isVideoEnabled: isVideoEnabled,
@@ -364,6 +365,10 @@
 
     function getRemoteStream(rtcId) {
       return janusFeedRegistry.get(rtcId).stream;
+    }
+
+    function getRemoteRtcIds() {
+      return janusFeedRegistry.getAllIds();
     }
 
     function setGotMedia(callback) {
