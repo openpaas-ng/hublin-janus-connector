@@ -5,11 +5,14 @@
 
   function janusFeedRegistry(_, $log) {
     var feeds = {};
+    var feedsMapping = {};
     var localFeed;
 
     return {
       add: add,
+      addFeedMapping: addFeedMapping,
       get: get,
+      getFeedMapping: getFeedMapping,
       getAll: getAll,
       getLocalFeed: getLocalFeed,
       setLocalFeed: setLocalFeed,
@@ -23,6 +26,15 @@
 
     function get(id) {
       return feeds[id];
+    }
+
+    function addFeedMapping(localFeedId, remoteFeedId) {
+      $log.info('Mapping feed  localFeed ', localFeedId, ' with remoteFeed', remoteFeedId);
+      feedsMapping[remoteFeedId] = localFeedId;
+    }
+
+    function getFeedMapping(id) {
+      return feedsMapping[id];
     }
 
     function getAll() {

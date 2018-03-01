@@ -84,7 +84,7 @@
             request: JANUS_CONSTANTS.join,
             room: roomId,
             ptype: JANUS_CONSTANTS.publisher,
-            display: displayName
+            display: JSON.stringify({ display: displayName, id: id })
           }
         });
       };
@@ -141,7 +141,6 @@
 
         return {
           id: attendee.id,
-          feedId: attendee.rtcid,
           displayName: attendee.displayName,
           avatar: attendee.avatar,
           mute: attendee.mute || false,

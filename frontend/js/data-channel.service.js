@@ -6,7 +6,9 @@
   function JanusDataChannel(
     $log,
     $q,
+    currentConferenceState,
     janusClient,
+    janusFeedRegistry,
     _,
     JANUS_CONSTANTS
   ) {
@@ -35,12 +37,11 @@
         } else {
           $log.debug('Send data on janus feed', dataChannel.id, 'on room', roomId, text);
 
-          type = type || JANUS_CONSTANTS.message;
+          text.type = type;
 
           var transaction = getTransactionId();
           var message = {
-            type: type,
-            textroom: type,
+            textroom: JANUS_CONSTANTS.message,
             transaction: transaction,
             room: roomId,
             text: JSON.stringify(text)
@@ -106,6 +107,9 @@
 
         if (msg.text) {
           msg.text = JSON.parse(msg.text);
+          var localFeedId = janusFeedRegistry.getFeedMapping(msg.from);
+
+          localFeedId && currentConferenceState.updateAttendeeByRtcid(localFeedId, msg.text.status);
         }
 
         $log.debug('Receive data from the DataChannel', msg);

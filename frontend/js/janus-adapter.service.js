@@ -128,10 +128,11 @@
       return videoEnabled;
     }
 
-    function subscribeToRemoteFeed(id, display) {
-      $log.info('Subscribing to remote feed', id, display);
+    function subscribeToRemoteFeed(id, displayData) {
+      $log.info('Subscribing to remote feed', id, displayData);
       var remoteFeed;
 
+      displayData = JSON.parse(displayData);
       janus.attach({
         plugin: JANUS_CONSTANTS.videoroom,
         success: handleRemoteSuccess,
@@ -143,7 +144,7 @@
       function handleRemoteSuccess(pluginHandle) {
         $log.info('Attaching a new remote feed with id', id);
 
-        remoteFeed = new JanusFeed(pluginHandle, session.conference.roomId, id, display, JANUS_FEED_TYPE.remote);
+        remoteFeed = new JanusFeed(pluginHandle, session.conference.roomId, id, displayData.display, JANUS_FEED_TYPE.remote);
         remoteFeed.listen();
       }
 
@@ -175,8 +176,9 @@
         // TODO: Find a better way to find the right index
         // this is length + 1 until we store the current feed in the registery also.
         remoteFeed.rfindex = feeds.length + 1;
-        currentConferenceState.pushAttendee(remoteFeed.rfindex, remoteFeed.id, null, display);
+        currentConferenceState.pushAttendee(remoteFeed.rfindex, remoteFeed.id, null, displayData.display);
         janusFeedRegistry.add(remoteFeed);
+        janusFeedRegistry.addFeedMapping(remoteFeed.id, displayData.id);
       }
     }
 
