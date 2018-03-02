@@ -17,6 +17,7 @@
       var dataChannel = null;
       var isOpen = false;
 
+      self.transactions = {};
       self.feedId = feedId;
       self.isDataChannelOpen = isDataChannelOpen;
       self.roomId = roomId;
@@ -82,12 +83,15 @@
       }
 
       function _register() {
+        var transactionId = getTransactionId();
+
         janusClient(dataChannel)
           .assertRoomExists(roomId)
           .then(function() {
+            self.transactions[transactionId] = transaction;
             var register = {
               textroom: JANUS_CONSTANTS.join,
-              transaction: getTransactionId(),
+              transaction: transactionId,
               room: roomId,
               username: feedId.toString(),
               display: display
@@ -95,24 +99,65 @@
 
             dataChannel.data({
               text: JSON.stringify(register),
-              success: function() { $log.debug('Registering on DataChannel success'); },
-              error: function(error) { $log.error('Error while registering on dataChannel', error); }
+              success: function() {
+                $log.debug('Registering on DataChannel success');
+              },
+              error: function(error) {
+                $log.error('Error while registering on dataChannel', error);
+              }
             });
           });
-        }
+
+          function transaction() {
+            $log.debug('Transaction on join is now complete', transactionId);
+          }
+      }
 
       function _onDataHandle(data) {
-        //TODO need to handle all type of data, ou of scope
+        $log.debug('Receive data from the DataChannel', data);
+
         var msg = JSON.parse(data);
+        var action = msg.textroom;
+        var transaction = msg.transaction;
 
-        if (msg.text) {
-          msg.text = JSON.parse(msg.text);
-          var localFeedId = janusFeedRegistry.getFeedMapping(msg.from);
+        // handle only my transactions
+        if (transaction && self.transactions[transaction]) {
+          self.transactions[transaction](msg);
+          delete self.transactions[transaction];
 
-          localFeedId && currentConferenceState.updateAttendeeByRtcid(localFeedId, msg.text.status);
+          return;
         }
 
-        $log.debug('Receive data from the DataChannel', msg);
+        if (action === 'join') {
+          $log.debug('Someone is joining the room', data);
+          /* data =
+          {
+            "textroom": "join",
+            "room": 117,
+            "username": "5108441650714721",
+            "display": "Christophe"
+          }
+          // TODO: Call the adapter addDataChannelOpenListener handler for remote only (not me)
+        } else if (action === 'leave') {
+          $log.debug('Someone is leaving the room', data);
+          /* data =
+          {
+            "textroom": "leave",
+            "room": 116,
+            "username": "5178046444405845"
+         }
+         */
+          // TODO: Call the adapter addDataChannelCloseListener handler for remote only (not me)
+        } else if (action === 'message' && msg.text) {
+          var text = JSON.parse(msg.text);
+          var localFeedId = janusFeedRegistry.getFeedMapping(msg.from);
+
+          localFeedId && currentConferenceState.updateAttendeeByRtcid(localFeedId, text.status);
+        } else if (action === 'success') {
+          // DROP IT
+        } else {
+          $log.debug('Unsupported action', action);
+        }
       }
 
       function _subscribe(jsep) {

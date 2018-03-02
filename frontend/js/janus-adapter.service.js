@@ -401,11 +401,15 @@
       $log.warn('doesDataChannelWork is not implement in Janus connector', rtcid);
     }
 
-    function addDataChannelOpenListener() {
+    // listener is like function(peerId)
+    // will be by us called when the Janus data channel is opened
+    function addDataChannelOpenListener(listener) {
       $log.warn('addDataChannelOpenListener is not implement in Janus connector');
     }
 
-    function addDataChannelCloseListener() {
+    // listener is like function(peerId)
+    // will be called by us when Janus data channel is closed
+    function addDataChannelCloseListener(listener) {
       $log.warn('addDataChannelCloseListener is not implement in Janus connector');
     }
 
