@@ -238,9 +238,30 @@
       function onSuccess(pluginHandle) {
         var id = pluginHandle.id;
 
-        dataChannel = new JanusDataChannel(janus, display, roomId, id);
         localFeed = new JanusFeed(pluginHandle, session.conference.roomId, id, display, JANUS_FEED_TYPE.local);
-        janusClient(pluginHandle).assertRoomExists(roomId).then(localFeed.join, onError);
+        janusClient(pluginHandle).assertRoomExists(roomId)
+          .then(localFeed.join)
+          .then(createDataChannel.bind(null, id))
+          .catch(onError);
+      }
+
+      function createDataChannel(id) {
+        var dataChannelOptions = {
+          onRemoteJoin: function(remoteId) {
+            $log.info('A remote joined the data channel', remoteId);
+          },
+          onRemoteLeave: function(remoteId) {
+            $log.info('A remote left the data channel', remoteId);
+          }
+        };
+
+        dataChannel = new JanusDataChannel(janus, display, roomId, id);
+
+        return dataChannel.init(dataChannelOptions).then(function() {
+          $log.debug('Data Channel has been successfully created');
+        }).catch(function(err) {
+          $log.error('Error while creating data channel, hublin experience will not be has good as expected', err);
+        });
       }
 
       function onError(err) {

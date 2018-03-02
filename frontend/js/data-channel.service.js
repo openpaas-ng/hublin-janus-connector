@@ -24,7 +24,40 @@
       self.sendData = sendData;
       self.sendStatus = sendStatus;
 
-      _init();
+      this.init = function(options) {
+        var defer = $q.defer();
+
+        options = options || {};
+        self.onRemoteJoin = options.onRemoteJoin || function(id) { $log.debug(id, 'joined the room');};
+        self.onRemoteLeave = options.onRemoteLeave || function(id) { $log.debug(id, 'left the room');};
+
+        janusInstance.attach({
+          plugin: JANUS_CONSTANTS.textroom,
+          success: onSuccess,
+          error: onError,
+          onmessage: _pluginHandleOnMessage,
+          ondataopen: _onDataOpenHandle,
+          ondata: _onDataHandle
+        });
+
+        function onSuccess(pluginHandle) {
+          var body = { request: JANUS_CONSTANTS.setup };
+
+          dataChannel = pluginHandle;
+          $log.debug('Plugin attached! (' + dataChannel.getPlugin() + ', id=' + dataChannel.getId() + ')');
+          $log.debug('Sending message (' + JSON.stringify(body) + ')');
+
+          dataChannel.send({ message: body});
+          defer.resolve();
+        }
+
+        function onError(error) {
+          $log.error('Error while attaching plugin textroom for DataChannel', error);
+          defer.reject(error);
+        }
+
+        return defer.promise;
+      };
 
       function isDataChannelOpen() {
         return isOpen;
@@ -129,34 +162,18 @@
         }
 
         if (action === 'join') {
-          $log.debug('Someone is joining the room', data);
-          /* data =
-          {
-            "textroom": "join",
-            "room": 117,
-            "username": "5108441650714721",
-            "display": "Christophe"
-          }
-          // TODO: Call the adapter addDataChannelOpenListener handler for remote only (not me)
+          $log.debug('Someone is joining the room', msg);
+          self.onRemoteJoin(msg.username);
         } else if (action === 'leave') {
-          $log.debug('Someone is leaving the room', data);
-          /* data =
-          {
-            "textroom": "leave",
-            "room": 116,
-            "username": "5178046444405845"
-         }
-         */
-          // TODO: Call the adapter addDataChannelCloseListener handler for remote only (not me)
+          $log.debug('Someone is leaving the room', msg);
+          self.onRemoteLeave(msg.username);
         } else if (action === 'message' && msg.text) {
           var text = JSON.parse(msg.text);
-          var localFeedId = janusFeedRegistry.getFeedMapping(msg.from);
+          var remoteFeedId = janusFeedRegistry.getFeedMapping(msg.from);
 
-          localFeedId && currentConferenceState.updateAttendeeByRtcid(localFeedId, text.status);
-        } else if (action === 'success') {
-          // DROP IT
+          remoteFeedId && currentConferenceState.updateAttendeeByRtcid(remoteFeedId, text.status);
         } else {
-          $log.debug('Unsupported action', action);
+          $log.debug('Unhandled action', action);
         }
       }
 
@@ -180,21 +197,6 @@
           });
       }
 
-      function _pluginHandleSuccess(pluginHandle) {
-        dataChannel = pluginHandle;
-
-        $log.debug('Plugin attached! (' + dataChannel.getPlugin() + ', id=' + dataChannel.getId() + ')');
-
-        var body = { request: JANUS_CONSTANTS.setup };
-
-        $log.debug('Sending message (' + JSON.stringify(body) + ')');
-        dataChannel.send({ message: body});
-      }
-
-      function _pluginHandleError(error) {
-        $log.error('Error while attaching plugin textroom for DataChannel', error);
-      }
-
       function _pluginHandleOnMessage(msg, jsep) {
         $log.debug('Receive message from the DataChannel', msg);
 
@@ -208,17 +210,6 @@
 
       function getTransactionId() {
         return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      }
-
-      function _init() {
-        janusInstance.attach({
-          plugin: JANUS_CONSTANTS.textroom,
-          success: _pluginHandleSuccess,
-          error: _pluginHandleError,
-          onmessage: _pluginHandleOnMessage,
-          ondataopen: _onDataOpenHandle,
-          ondata: _onDataHandle
-        });
       }
     };
   }
