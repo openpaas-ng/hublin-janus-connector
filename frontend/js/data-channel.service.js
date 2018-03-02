@@ -18,6 +18,7 @@
       var isOpen = false;
 
       self.transactions = {};
+      self.remoteIds = [];
       self.feedId = feedId;
       self.isDataChannelOpen = isDataChannelOpen;
       self.roomId = roomId;
@@ -28,8 +29,9 @@
         var defer = $q.defer();
 
         options = options || {};
-        self.onRemoteJoin = options.onRemoteJoin || function(id) { $log.debug(id, 'joined the room');};
-        self.onRemoteLeave = options.onRemoteLeave || function(id) { $log.debug(id, 'left the room');};
+        self.onRemoteJoin = options.onRemoteJoin || function(id) { $log.debug(id, 'joined the room'); };
+        self.onRemoteLeave = options.onRemoteLeave || function(id) { $log.debug(id, 'left the room'); };
+        self.onRemoteData = options.onRemoteData || function(id) { $log.debug(id, 'sent data'); };
 
         janusInstance.attach({
           plugin: JANUS_CONSTANTS.textroom,
@@ -63,22 +65,22 @@
         return isOpen;
       }
 
-      function sendData(type, text, remoteFeedId) {
+      function sendData(type, data, remoteFeedId) {
         var defer = $q.defer();
 
         if (!isOpen) {
           defer.reject(new Error('DataChannel is closed, can not send data'));
         } else {
-          $log.debug('Send data on janus feed', dataChannel.id, 'on room', roomId, text);
+          $log.debug('Send data on janus feed', dataChannel.id, 'on room', roomId, data);
 
-          text.type = type;
+          data.type = type;
 
           var transaction = getTransactionId();
           var message = {
             textroom: JANUS_CONSTANTS.message,
             transaction: transaction,
             room: roomId,
-            text: JSON.stringify(text)
+            text: JSON.stringify(data)
           };
 
           if (remoteFeedId) {
@@ -150,7 +152,7 @@
         $log.debug('Receive data from the DataChannel', data);
 
         var msg = JSON.parse(data);
-        var action = msg.textroom;
+        var textroom = msg.textroom;
         var transaction = msg.transaction;
 
         // handle only my transactions
@@ -161,19 +163,27 @@
           return;
         }
 
-        if (action === 'join') {
+        if (textroom === 'join') {
           $log.debug('Someone is joining the room', msg);
+          janusFeedRegistry.addRemoteDataChannel(msg.username);
           self.onRemoteJoin(msg.username);
-        } else if (action === 'leave') {
+        } else if (textroom === 'leave') {
           $log.debug('Someone is leaving the room', msg);
+          janusFeedRegistry.removeRemoteDataChannel(msg.username);
           self.onRemoteLeave(msg.username);
-        } else if (action === 'message' && msg.text) {
-          var text = JSON.parse(msg.text);
+        } else if (textroom === 'message' && msg.text) {
+          var msgData = JSON.parse(msg.text);
           var remoteFeedId = janusFeedRegistry.getFeedMapping(msg.from);
 
-          remoteFeedId && currentConferenceState.updateAttendeeByRtcid(remoteFeedId, text.status);
+          if (!remoteFeedId) {
+            $log.debug('Can not find remote feed id (probably message from local which is sent back from janus)', msg.from);
+          }
+
+          self.onRemoteData(msg.from, msgData);
+          // TODO: This should be a peer listener like any other, handling data on special msgType
+          remoteFeedId && msgData.status && currentConferenceState.updateAttendeeByRtcid(remoteFeedId, msgData.status);
         } else {
-          $log.debug('Unhandled action', action);
+          $log.debug('Unhandled action', textroom);
         }
       }
 

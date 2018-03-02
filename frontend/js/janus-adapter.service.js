@@ -32,6 +32,10 @@
     var NOT_CONNECTED = 0;
     var BECOMING_CONNECTED = 1;
     var IS_CONNECTED = 2;
+    var dataChannelOpenListeners = [];
+    var dataChannelCloseListeners = [];
+    var peerListeners = [];
+    var peerListener = {handle: function() {}, msgType: ''};
     var Janus = janusFactory.get();
 
     Janus.init({
@@ -247,11 +251,36 @@
 
       function createDataChannel(id) {
         var dataChannelOptions = {
+          onRemoteData: function(remoteId, data) {
+            $log.info('A remote peer sent data', remoteId, data);
+            // TODO: Get the listeners from type and call them all
+            if (data.type && data.type === peerListener.msgType) {
+              try {
+                peerListener.handle(remoteId, data.type, data);
+              } catch (err) {
+                $log.error('Error while processing remote peer data', data);
+              }
+            }
+          },
           onRemoteJoin: function(remoteId) {
             $log.info('A remote joined the data channel', remoteId);
+            dataChannelOpenListeners.forEach(function(listener) {
+              try {
+                listener(remoteId);
+              } catch (err) {
+                $log.error('DataChannelOpenListener thrown error', err);
+              }
+            });
           },
           onRemoteLeave: function(remoteId) {
             $log.info('A remote left the data channel', remoteId);
+            dataChannelCloseListeners.forEach(function(listener) {
+              try {
+                listener(remoteId);
+              } catch (err) {
+                $log.error('DataChannelCloseListener thrown error', err);
+              }
+            });
           }
         };
 
@@ -355,7 +384,7 @@
     }
 
     function sendData(remoteFeedId, msgType, data, callback) {
-      dataChannel.sendData(msgType, data, remoteFeedId).then(callback);
+      dataChannel.sendData(msgType, data, remoteFeedId).then(callback || function() {});
     }
 
     function myRtcid() {
@@ -383,7 +412,10 @@
     }
 
     function setPeerListener(handler, msgType) {
-      $log.warn('setPeerListener is not implement in Janus connector', handler, msgType);
+      peerListener = {
+        handle: handler,
+        msgType: msgType
+      };
     }
 
     function broadcastData(msgType, data) {
@@ -422,32 +454,34 @@
       $log.warn('doesDataChannelWork is not implement in Janus connector', rtcid);
     }
 
-    // listener is like function(peerId)
-    // will be by us called when the Janus data channel is opened
     function addDataChannelOpenListener(listener) {
-      $log.warn('addDataChannelOpenListener is not implement in Janus connector');
+      $log.debug('Adding dataChannelOpenListener', listener);
+
+      dataChannelOpenListeners.push(listener);
     }
 
-    // listener is like function(peerId)
-    // will be called by us when Janus data channel is closed
     function addDataChannelCloseListener(listener) {
-      $log.warn('addDataChannelCloseListener is not implement in Janus connector');
+      $log.debug('Adding dataChannelCloseListener', listener);
+
+      dataChannelCloseListeners.push(listener);
     }
 
-    function removeDataChannelOpenListener() {
-      $log.warn('removeDataChannelOpenListener is not implement in Janus connector');
+    function removeDataChannelOpenListener(listener) {
+      removeListener(dataChannelOpenListeners, listener);
     }
 
-    function removeDataChannelCloseListener() {
-      $log.warn('removeDataChannelCloseListener is not implement in Janus connector');
+    function removeDataChannelCloseListener(listener) {
+      removeListener(dataChannelCloseListeners, listener);
     }
 
-    function addPeerListener() {
-      $log.warn('addPeerListener is not implement in Janus connector');
+    function addPeerListener(listener) {
+      //listener(id, msgType, msgData);
+      $log.debug('Adding peerListener', listener);
+      peerListeners.push(listener);
     }
 
-    function removePeerListener() {
-      $log.warn('removePeerListener is not implement in Janus connector');
+    function removePeerListener(listener) {
+      removeListener(peerListeners, listener);
     }
 
     function connection() {
@@ -457,9 +491,15 @@
     }
 
     function getOpenedDataChannels() {
-      $log.warn('getOpenedDataChannels is not implement in Janus connector');
+      return janusFeedRegistry.getRemoteDataChannels();
+    }
 
-      return [];
+    function removeListener(list, listener) {
+      var index = list.indexOf(listener);
+
+      if (index > -1) {
+        list.splice(index, 1);
+      }
     }
   }
 })(angular);

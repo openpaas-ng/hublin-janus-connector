@@ -4,6 +4,7 @@
   angular.module('hublin.janus.connector').factory('janusFeedRegistry', janusFeedRegistry);
 
   function janusFeedRegistry(_, $log) {
+    var remoteDataChannels = {};
     var feeds = {};
     var feedsMapping = {};
     var localFeed;
@@ -16,7 +17,10 @@
       getAll: getAll,
       getLocalFeed: getLocalFeed,
       setLocalFeed: setLocalFeed,
-      remove: remove
+      remove: remove,
+      getRemoteDataChannels: getRemoteDataChannels,
+      addRemoteDataChannel: addRemoteDataChannel,
+      removeRemoteDataChannel: removeRemoteDataChannel
     };
 
     function add(feed) {
@@ -35,6 +39,18 @@
 
     function getFeedMapping(id) {
       return feedsMapping[id];
+    }
+
+    function getRemoteDataChannels() {
+      return _.values(remoteDataChannels);
+    }
+
+    function addRemoteDataChannel(id) {
+      remoteDataChannels[id] = { id: id, date: Date.now(), status: 'active' };
+    }
+
+    function removeRemoteDataChannel(id) {
+      delete remoteDataChannels[id];
     }
 
     function getAll() {
