@@ -11,6 +11,8 @@
       this.displayName = displayName;
       this.type = type;
 
+      var streamPromise = $q.defer();
+
       this.listen = function() {
         $log.info('Listening to janus feed', id, 'on room', roomId);
 
@@ -133,7 +135,12 @@
       this.setStream = function(stream) {
         $log.info('Setting stream for janus feed', id);
 
+        streamPromise.resolve(stream);
         this.stream = stream;
+      };
+
+      this.getStream = function() {
+        return streamPromise.promise;
       };
 
       this.getStatus = function() {

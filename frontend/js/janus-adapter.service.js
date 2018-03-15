@@ -364,7 +364,7 @@
     }
 
     function getRemoteStream(rtcId) {
-      return janusFeedRegistry.get(rtcId).stream;
+      return janusFeedRegistry.get(rtcId).getStream();
     }
 
     function getRemoteRtcIds() {
